@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>椒麻江湖 · M6 第四章 麻婆岭</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="topbar" class="ui">
+    <span class="loc">皇族小满家·椒麻鸡火锅</span>
+    <span class="time">戌时</span>
+  </div>
+
+  <div id="explore" class="ui panel">
+    <div class="panel-title">探索</div>
+    <ul id="explore-list"></ul>
+    <div class="hint">点击地面行走 · 1/2/3 切换队长<br>G 网格 · E 校准</div>
+  </div>
+
+  <div id="party" class="ui"></div>
+
+  <div id="menu-btns" class="ui">
+    <button data-soon="背包" data-panel="bag">背包</button>
+    <button data-soon="人物" data-panel="party">人物</button>
+    <button data-soon="江湖志" data-panel="log">江湖志</button>
+    <button data-soon="菜单" data-panel="menu" class="mb-menu">菜单</button>
+  </div>
+
+  <div id="action-menu" class="ui hidden">
+    <div class="am-title"></div>
+    <button data-act="talk">交谈</button>
+    <button data-act="look">查看</button>
+    <button data-act="spar">切磋</button>
+  </div>
+
+  <div id="dialog" class="ui hidden">
+    <div class="scroll">
+      <canvas class="portrait" width="120" height="120"></canvas>
+      <div class="body">
+        <div class="seal"></div>
+        <div class="text"></div>
+        <div class="options"></div>
+        <div class="more">▼</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor" class="ui hidden">
+    <div class="ed-title">校准编辑（E 退出）</div>
+    <div class="ed-row">原点 <b id="ed-origin"></b></div>
+    <div class="ed-row">格宽 <b id="ed-tw"></b>
+      <button data-ed="tw-">－</button><button data-ed="tw+">＋</button></div>
+    <div class="ed-row">格高 <b id="ed-th"></b>
+      <button data-ed="th-">－</button><button data-ed="th+">＋</button></div>
+    <div class="ed-row">列数 <b id="ed-cols"></b>
+      <button data-ed="cols-">－</button><button data-ed="cols+">＋</button></div>
+    <div class="ed-row">行数 <b id="ed-rows"></b>
+      <button data-ed="rows-">－</button><button data-ed="rows+">＋</button></div>
+    <div class="ed-row">人物缩放 <b id="ed-cs"></b>
+      <button data-ed="cs-">－</button><button data-ed="cs+">＋</button></div>
+    <div class="ed-row"><button data-ed="placeTable" id="ed-place">摆放火锅桌</button>
+      <button data-ed="export" id="ed-export">导出 map.js</button></div>
+    <div class="ed-help">拖动画面 / 方向键(Shift×10) 移原点<br>+ / - 等比调格子；[ ] 调宽；; ' 调高<br>点击格子切换 可走 / 障碍</div>
+  </div>
+
+  <div id="toast" class="ui hidden"></div>
+  <div id="rotate-hint" class="ui">横屏体验更佳 · 点此关闭</div>
+</div>
+
+<!-- 普通 script 顺序加载，零构建，双击 index.html 即可运行 -->
+<script src="assets.js"></script>
+<script src="map.js"></script>
+<script src="map_market.js"></script>
+<script src="map_river.js"></script>
+<script src="map_village.js"></script>
+<script src="map_hq.js"></script>
+<script src="map_arena.js"></script>
+<script src="data/characters.js"></script>
+<script src="data/dialogue.js"></script>
+<script src="data/chapters.js"></script>
+<script src="data/minigames.js"></script>
+<script src="js/save.js"></script>
+<script src="js/iso.js"></script>
+<script src="js/pathfind.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/dialog.js"></script>
+<script src="js/editor.js"></script>
+<script src="data/battle.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/minigames.js"></script>
+<script src="js/story.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
