@@ -1,0 +1,446 @@
+// 《椒麻江湖》对白数据（数据驱动，逻辑里不写死台词）
+// ※ 第一章三条分支线 + 第二章的对白都是程序员 Bot 起草的【草稿】，游戏设计 Bot / 策划可直接改这个文件里的文字，不用动代码。
+//
+// 节点字段：speaker 说话人 id；text 文本；next 下一节点；options 选项（2~3 个，可写 if/ifNot/set/clear/do/next/doneFlag）；
+//   if / ifNot：触发条件 flag 数组（不满足时跳到 else 节点，没有 else 就结束）；
+//   set / clear：进入该节点时设置 / 清除的 flag；
+//   do：剧情指令数组（对话关掉后按顺序执行，见 js/story.js）：
+//     {"route":"A"} 开始某条线并切队长；{"ending":"A"} 弹结局卡；{"leader":"feifei"} 切队长；{"battle":"labupa"} 进入战斗；
+//     {"title":"ch2"} 章节标题卡；{"minigame":"emblem","win":"节点","quit":"节点"} 小玩法（emblem 认家徽 / duel 比口才 / wok 颠勺 / combine 合成秘方）；
+//     {"gain":"recipe_half"} 获得道具提示（道具定义见 data/chapters.js）；{"card":"dish","then":"节点"} 新菜卡；{"finale":true} 终幕卡；
+//     {"open":"节点"} 对话结束后立刻接着开另一段对话。
+//   选项 doneFlag：该 flag 为真时在选项上盖“已完”印章。
+// entries：交互点 → 动作(any 交谈和查看都先查这里 / talk 交谈 / look 查看) → 候选起始节点，按顺序取第一个条件满足的。
+// routes：三条线的元数据和目标（探索面板按 stages 顺序显示第一个 until 未达成的目标）。
+// endings：结局卡内容。
+// sceneEnter：第一次进入某场景时自动播放的对白；chapter2.stages：第二章目标（scene 为目标所在场景，不在该场景时自动指向出口）。
+// 所有 flag 都会存进 localStorage（键 jiaoma_jianghu_m4），刷新后恢复。
+window.DIALOGUE = {
+  "speakers": {
+    "xiaoman":  { "name": "小满",   "sprite": "char_xiaoman" },
+    "feifei":   { "name": "飞飞",   "sprite": "char_feifei" },
+    "pangdi":   { "name": "胖弟",   "sprite": "char_pangdi" },
+    "zhanggui": { "name": "满掌柜", "sprite": "npc_zhanggui" },
+    "labupa":   { "name": "辣不怕", "sprite": "npc_labupa", "color": "#8e1d14" },
+    "tongzi":   { "name": "辣椒童子", "sprite": "npc_tongzi", "color": "#c0452f" },
+    "laobanniang": { "name": "茶馆老板娘", "sprite": "npc_laobanniang", "color": "#3f6b5a" },
+    "hongtang": { "name": "红汤帮打手", "sprite": "npc_hongtang", "color": "#a3221a" },
+    "laozhou":  { "name": "老周（古玩摊主）", "color": "#6b5a3a", "initial": "周" },
+    "qian":     { "name": "钱先生（灯谜摊主）", "color": "#2f4f7a", "initial": "钱" },
+    "narrator": { "name": "旁白" }
+  },
+
+  "routes": {
+    "A": { "name": "家徽之谜", "short": "家徽之谜", "hero": "xiaoman", "heroName": "小满",
+      "stages": [
+        { "until": "A_2",   "text": "招牌左下角好像刻着什么——去看看“椒麻鸡火锅”招牌", "target": "sign" },
+        { "until": "A_3",   "text": "“锦囊在暖处，日日翻滚”——去火锅桌找找", "target": "table" },
+        { "until": "end_A", "text": "把找到的锦囊交还满掌柜", "target": "zhanggui" }
+      ] },
+    "B": { "name": "江湖食客的吃辣挑战", "short": "吃辣挑战", "hero": "feifei", "heroName": "飞飞",
+      "stages": [
+        { "until": "B_2",   "text": "食客在火锅桌留了战帖——去火锅桌看看", "target": "table" },
+        { "until": "B_3",   "text": "到招牌底下喊话，接下战帖", "target": "sign" },
+        { "until": "end_B", "text": "回禀满掌柜", "target": "zhanggui" }
+      ] },
+    "C": { "name": "后厨异响", "short": "后厨异响", "hero": "pangdi", "heroName": "胖弟",
+      "stages": [
+        { "until": "C_2",   "text": "去后厨门帘那儿听听动静", "target": "kitchen" },
+        { "until": "C_3",   "text": "黄猫钻到火锅桌底下了——去火锅桌堵它", "target": "table" },
+        { "until": "end_C", "text": "把锦囊交还满掌柜", "target": "zhanggui" }
+      ] }
+  },
+
+  "postObjectives": [
+    { "if": ["end_B"], "ifNot": ["battle_B_win", "ch1_done", "route_A", "route_B", "route_C"], "text": "戌时三刻——到“椒麻鸡火锅”招牌下迎战辣不怕，赢回锦囊", "target": "sign" },
+    { "if": ["battle_B_win"], "ifNot": ["ch1_done"], "text": "锦囊赢回来了——交给满掌柜，当面打开", "target": "zhanggui" },
+    { "if": ["end_A"], "ifNot": ["ch1_done"], "text": "锦囊找到了——交给满掌柜，当面打开", "target": "zhanggui" },
+    { "if": ["end_C"], "ifNot": ["ch1_done"], "text": "锦囊找到了——交给满掌柜，当面打开", "target": "zhanggui" }
+  ],
+
+  "chapters": {
+    "ch1": { "seal": "第一章", "title": "锦囊失踪记", "sub": "祖传三代的秘方锦囊，一夜之间不见了。" },
+    "ch2": { "seal": "第二章", "title": "锦囊里的半张方子", "sub": "半张方子，一句“渝州·老码头”，和一位二十年前的故人。" }
+  },
+
+  "sceneEnter": [
+    { "scene": "market", "node": "MK_1", "ifNot": ["c2_arrived"] }
+  ],
+
+  "chapter2": {
+    "name": "锦囊里的半张方子",
+    "stages": [
+      { "until": "c2_arrived",    "scene": "shop",   "text": "走出店门，去渝州·老码头", "target": "door" },
+      { "until": "c2_met_labupa", "scene": "market", "text": "炒锅摊那边有人扯着嗓子吆喝——去看看", "target": "labupa" },
+      { "until": "c2_clues",      "scene": "market", "text": "完成三位摊主的小委托，打听“故人”的下落", "checklist": [
+          { "flag": "c2_e1_done", "text": "古玩摊 · 小满认家徽", "target": "stall_1", "hero": "小满" },
+          { "flag": "c2_e2_done", "text": "灯谜摊 · 飞飞比口才", "target": "stall_2", "hero": "飞飞" },
+          { "flag": "c2_e3_done", "text": "炒锅摊 · 胖弟帮颠勺", "target": "stall_3", "hero": "胖弟" } ] },
+      { "until": "c2_deduced",    "scene": "market", "text": "三条线索都齐了——找辣不怕合计合计，故人到底是谁", "target": "labupa" },
+      { "until": "c2_ht_win",     "scene": "market", "text": "红汤帮打手堵在茶馆门口——上前交涉（打不过可以再来）", "target": "hongtang_a" },
+      { "until": "c2_combined",   "scene": "market", "text": "去码头茶馆找老板娘", "target": "laobanniang" },
+      { "until": "c2_dish",       "scene": "shop",   "text": "带着完整的椒麻秘方回火锅店，交给满掌柜", "target": "zhanggui" },
+      { "until": "c2_finale",     "scene": "shop",   "text": "满掌柜好像还有话要说", "target": "zhanggui" }
+    ],
+    "done": "第二章完 · 待续。可以四处逛逛，也可以回主菜单开一局新游戏。"
+  },
+
+  "endings": {
+    "A": { "title": "家徽之谜", "hero": "char_xiaoman",
+      "lines": ["锦囊根本没丢——那是满家祖传的考题，只有带着家徽的人才打得开招牌后的机关。",
+                "小满一言不发地把锦囊收进怀里。满掌柜偷偷抹了把眼角：“第四代，稳了。”"],
+      "reward": "获得称号【家徽传人】 · 道具「熏香的秘方锦囊」", "next": "M_1", "nextLabel": "当面打开锦囊" },
+    "B": { "title": "江湖食客的吃辣挑战", "hero": "char_feifei", "m3": true,
+      "lines": ["江湖食客“辣不怕”应下了战约：明晚戌时三刻，十成椒麻，一决胜负。",
+                "飞飞合上折扇，推了推眼镜：“锦囊，我会亲手拿回来。”胖弟已经在偷偷练习吸气了。"],
+      "reward": "获得称号【以扇扇辣】 · 道具「辣不怕的战帖」", "m3Label": "现在就去招牌下迎战", "laterLabel": "先准备一下" },
+    "C": { "title": "后厨异响", "hero": "char_pangdi",
+      "lines": ["锦囊失踪案告破：凶手是店里的黄猫“椒椒”，被锦囊上的卤香勾了魂。",
+                "胖弟一勺定乾坤，从此后厨的老鼠都绕着他走。"],
+      "reward": "获得称号【后厨守护者】 · 道具「沾着卤汁的锦囊」", "next": "M_1", "nextLabel": "当面打开锦囊" }
+  },
+
+  "entries": {
+    "sign": {
+      "any": [
+        { "node": "A2_1", "if": ["route_A", "A_1"], "ifNot": ["A_2"] },
+        { "node": "B3_1", "if": ["route_B", "B_2"], "ifNot": ["B_3"] },
+        { "node": "B5_1", "if": ["end_B"], "ifNot": ["battle_B_win", "ch1_done", "route_A", "route_B", "route_C"] }
+      ],
+      "look": [ { "node": "sign_look" } ],
+      "talk": [ { "node": "sign_talk" } ]
+    },
+    "table": {
+      "any": [
+        { "node": "A3_1", "if": ["route_A", "A_2"], "ifNot": ["A_3"] },
+        { "node": "B2_1", "if": ["route_B", "B_1"], "ifNot": ["B_2"] },
+        { "node": "C3_1", "if": ["route_C", "C_2"], "ifNot": ["C_3"] }
+      ],
+      "look": [
+        { "node": "table_after_eat", "if": ["ate_hotpot"] },
+        { "node": "table_look" }
+      ],
+      "talk": [
+        { "node": "table_after_eat", "if": ["ate_hotpot"] },
+        { "node": "table_pangdi" }
+      ]
+    },
+    "kitchen": {
+      "any": [ { "node": "C2_1", "if": ["route_C", "C_1"], "ifNot": ["C_2"] } ],
+      "look": [ { "node": "kitchen_idle" } ],
+      "talk": [ { "node": "kitchen_idle" } ]
+    },
+    "zhanggui": {
+      "talk": [
+        { "node": "ZG2_1", "if": ["c2_combined"], "ifNot": ["c2_dish"] },
+        { "node": "ZG2_5", "if": ["c2_dish"], "ifNot": ["c2_finale"] },
+        { "node": "zg_end", "if": ["c2_finale"] },
+        { "node": "zg_c2b", "if": ["c2_arrived"] },
+        { "node": "zg_c2", "if": ["ch1_done"] },
+        { "node": "M_1", "if": ["end_A"], "ifNot": ["ch1_done", "route_A", "route_B", "route_C"] },
+        { "node": "M_1", "if": ["end_C"], "ifNot": ["ch1_done", "route_A", "route_B", "route_C"] },
+        { "node": "M_1", "if": ["battle_B_win"], "ifNot": ["ch1_done", "route_A", "route_B", "route_C"] },
+        { "node": "zg_waitB", "if": ["end_B"], "ifNot": ["battle_B_win", "route_A", "route_B", "route_C"] },
+        { "node": "A4_1", "if": ["route_A", "A_3"] },
+        { "node": "B4_1", "if": ["route_B", "B_3"] },
+        { "node": "C4_1", "if": ["route_C", "C_3"] },
+        { "node": "zg_busy", "if": ["route_A"] },
+        { "node": "zg_busy", "if": ["route_B"] },
+        { "node": "zg_busy", "if": ["route_C"] },
+        { "node": "zg_choose", "if": ["heard_jinnang"] },
+        { "node": "zg_1" }
+      ],
+      "look": [ { "node": "zg_look" } ]
+    },
+    "door": {
+      "any": [ { "node": "door_locked", "ifNot": ["ch1_done"] } ]
+    },
+
+    "labupa": {
+      "any": [
+        { "node": "LP_1", "ifNot": ["c2_met_labupa"] },
+        { "node": "DED_1", "if": ["c2_e1_done", "c2_e2_done", "c2_e3_done"], "ifNot": ["c2_deduced"] },
+        { "node": "E3_1", "ifNot": ["c2_e3_done"] },
+        { "node": "LP_hint1", "ifNot": ["c2_clues"] },
+        { "node": "LP_hint2", "ifNot": ["c2_ht_win"] },
+        { "node": "LP_idle" }
+      ]
+    },
+    "tongzi": {
+      "any": [
+        { "node": "TZ_0", "ifNot": ["c2_met_labupa"] },
+        { "node": "TZ_1", "ifNot": ["c2_clues"] },
+        { "node": "TZ_2", "ifNot": ["c2_ht_win"] },
+        { "node": "TZ_3" }
+      ]
+    },
+    "stall_1": {
+      "any": [
+        { "node": "S1_idle", "ifNot": ["c2_met_labupa"] },
+        { "node": "E1_1", "ifNot": ["c2_e1_done"] },
+        { "node": "E1_after" }
+      ]
+    },
+    "stall_2": {
+      "any": [
+        { "node": "S2_idle", "ifNot": ["c2_met_labupa"] },
+        { "node": "E2_1", "ifNot": ["c2_e2_done"] },
+        { "node": "E2_after" }
+      ]
+    },
+    "stall_3": {
+      "any": [
+        { "node": "LP_1", "ifNot": ["c2_met_labupa"] },
+        { "node": "E3_1", "ifNot": ["c2_e3_done"] },
+        { "node": "E3_after" }
+      ]
+    },
+    "hongtang_a": { "any": [ { "node": "HT_1", "ifNot": ["c2_ht_tried"] }, { "node": "HT_retry" } ] },
+    "hongtang_b": { "any": [ { "node": "HT_1", "ifNot": ["c2_ht_tried"] }, { "node": "HT_retry" } ] },
+    "laobanniang": {
+      "any": [
+        { "node": "HT_1", "if": ["c2_deduced"], "ifNot": ["c2_ht_win", "c2_ht_tried"] },
+        { "node": "HT_retry", "if": ["c2_deduced"], "ifNot": ["c2_ht_win"] },
+        { "node": "LB_1", "if": ["c2_ht_win"], "ifNot": ["c2_got_half"] },
+        { "node": "LB_combine", "if": ["c2_got_half"], "ifNot": ["c2_combined"] },
+        { "node": "LB_after", "if": ["c2_combined"] },
+        { "node": "LB_idle" }
+      ]
+    },
+    "teahouse": {
+      "any": [
+        { "node": "HT_1", "if": ["c2_deduced"], "ifNot": ["c2_ht_win", "c2_ht_tried"] },
+        { "node": "HT_retry", "if": ["c2_deduced"], "ifNot": ["c2_ht_win"] },
+        { "node": "LB_1", "if": ["c2_ht_win"], "ifNot": ["c2_got_half"] }
+      ],
+      "look": [ { "node": "TH_look" } ],
+      "talk": [ { "node": "LB_idle" } ]
+    },
+    "pier": {
+      "look": [ { "node": "PIER_1" } ],
+      "talk": [ { "node": "PIER_2" } ]
+    }
+  },
+
+  "nodes": {
+    "sign_look":  { "speaker": "xiaoman", "text": "这是小满家祖传三代的招牌。" },
+    "sign_talk":  { "speaker": "pangdi",  "text": "跟招牌说话？……“椒麻鸡火锅”，你好。", "next": "sign_look" },
+
+    "table_look": { "speaker": "narrator", "text": "铜锅里红油翻滚，椒麻的香气直往鼻子里钻。", "next": "table_pangdi" },
+    "table_pangdi": {
+      "speaker": "pangdi", "text": "咕……我就闻闻，真的就闻闻。",
+      "options": [
+        { "text": "先吃一口", "set": ["ate_hotpot"], "next": "table_eat" },
+        { "text": "等会再说", "set": ["hotpot_later"], "next": "table_later" }
+      ]
+    },
+    "table_eat":   { "speaker": "pangdi", "text": "嘶——麻！辣！香！这一口值了！" },
+    "table_later": { "speaker": "feifei", "text": "先办正事，锅又跑不了。" },
+    "table_after_eat": { "speaker": "pangdi", "text": "刚才那口还在嘴里麻着呢……再来一口也不过分吧？" },
+
+    "kitchen_idle": { "speaker": "narrator", "text": "门帘后飘来一阵老卤香，灶上的火已经封了。" },
+
+    "zg_look": { "speaker": "narrator", "text": "满掌柜攥着算盘，眉头拧成了一个结。" },
+    "zg_1": { "speaker": "zhanggui", "text": "小满！你们可算回来了。", "next": "zg_2" },
+    "zg_2": { "speaker": "zhanggui", "text": "咱家的秘方锦囊……昨夜不见了！", "set": ["heard_jinnang"], "next": "zg_3" },
+    "zg_3": { "speaker": "xiaoman",  "text": "什么？那可是祖传三代的方子！", "next": "zg_4" },
+    "zg_4": { "speaker": "zhanggui", "text": "锦囊一丢，这招牌怕是保不住了。你们……打算从哪儿查起？", "next": "zg_choose" },
+    "zg_choose": {
+      "speaker": "zhanggui", "text": "三条路，你们挑一条。",
+      "options": [
+        { "text": "【小满线】家徽之谜：小满查家徽留下的线索", "doneFlag": "end_A", "do": [{ "route": "A" }], "next": "A1_1" },
+        { "text": "【飞飞线】江湖食客的吃辣挑战：飞飞去会会那位食客", "doneFlag": "end_B", "do": [{ "route": "B" }], "next": "B1_1" },
+        { "text": "【胖弟线】后厨异响：胖弟去后厨探个究竟", "doneFlag": "end_C", "do": [{ "route": "C" }], "next": "C1_1" }
+      ]
+    },
+    "zg_busy": {
+      "speaker": "zhanggui", "text": "线索查得怎么样了？看看右边的“当前目标”。",
+      "options": [
+        { "text": "接着查", "next": null },
+        { "text": "换一条线", "next": "zg_choose" }
+      ]
+    },
+
+    "A1_1": { "speaker": "xiaoman",  "text": "锦囊上绣着咱家家徽，谁拿了都不好出手。", "set": ["A_1"], "next": "A1_2" },
+    "A1_2": { "speaker": "zhanggui", "text": "家徽……对了！你爷爷当年在招牌上动过手脚，说是“留给下一代”。", "next": "A1_3" },
+    "A1_3": { "speaker": "feifei",   "text": "那就先去看看招牌。" },
+    "A2_1": { "speaker": "xiaoman",  "text": "招牌左下角刻着的纹样……和我手里这块家徽令牌一模一样。", "next": "A2_2" },
+    "A2_2": { "speaker": "feifei",   "text": "纹路缺了一角，像个锁眼。试试把家徽按上去？", "next": "A2_3" },
+    "A2_3": { "speaker": "narrator", "text": "“咔哒”一声，招牌背后弹出一张泛黄的纸条：锦囊在暖处，日日翻滚。", "set": ["A_2"], "next": "A2_4" },
+    "A2_4": { "speaker": "pangdi",   "text": "暖处、天天翻滚……这说的不就是我吗？" },
+    "A3_1": { "speaker": "pangdi",   "text": "哦——是这口锅！暖处，日日翻滚！", "next": "A3_2" },
+    "A3_2": { "speaker": "narrator", "text": "小满拧开铜锅底座，暗格里躺着一个红布锦囊，熏得满是椒麻香。", "set": ["A_3"], "next": "A3_3" },
+    "A3_3": { "speaker": "xiaoman",  "text": "找到了。拿去给爹看看。" },
+    "A4_1": { "speaker": "zhanggui", "text": "好小子，真让你找着了！这是你爷爷出的考题，我……昨夜喝多了，给忘了。", "next": "A4_2" },
+    "A4_2": { "speaker": "xiaoman",  "text": "……爹。", "do": [{ "ending": "A" }] },
+
+    "B1_1": { "speaker": "feifei",   "text": "昨夜最后一桌客人，是那个自称“辣不怕”的江湖食客吧？", "set": ["B_1"], "next": "B1_2" },
+    "B1_2": { "speaker": "zhanggui", "text": "正是！他吃完说要“借”锦囊研究研究，还在火锅桌上压了张战帖！", "next": "B1_3" },
+    "B1_3": { "speaker": "feifei",   "text": "有意思。我去看看。" },
+    "B2_1": { "speaker": "narrator", "text": "桌上压着一张战帖：“能吃下十成椒麻者，锦囊奉还。——辣不怕”", "next": "B2_2" },
+    "B2_2": { "speaker": "feifei",   "text": "（唰地展开折扇）挑战，我接了。", "next": "B2_3" },
+    "B2_3": { "speaker": "pangdi",   "text": "我、我可以帮你吃一半！不，三分之二！", "set": ["B_2"] },
+    "B3_1": { "speaker": "feifei",   "text": "辣不怕！战帖我接了——明晚戌时三刻，就在这块招牌底下！", "next": "B3_2" },
+    "B3_2": { "speaker": "labupa",   "text": "（门外一声大笑）好胆！到时候可别辣哭了鼻子！", "set": ["B_3"], "next": "B3_3" },
+    "B3_3": { "speaker": "xiaoman",  "text": "回去跟爹说一声。" },
+    "B4_1": { "speaker": "zhanggui", "text": "十成椒麻？那可是能把铜锅烧穿的辣度啊……", "next": "B4_2" },
+    "B4_2": { "speaker": "feifei",   "text": "眼镜擦亮了，扇子也备好了。放心。", "do": [{ "ending": "B" }] },
+    "B5_1": { "speaker": "labupa",   "text": "（辣不怕抱着一坛红油站在招牌下）十成椒麻，备好了。谁先来？", "next": "B5_2" },
+    "B5_2": {
+      "speaker": "feifei", "text": "（展开折扇）我们三个一起。",
+      "options": [
+        { "text": "迎战！（进入战斗）", "do": [{ "battle": "labupa" }], "next": null },
+        { "text": "再准备一下", "next": null }
+      ]
+    },
+
+    "C1_1": { "speaker": "pangdi",   "text": "说起来，昨夜后厨“咚咚”响了一宿，我还以为是我肚子在叫。", "set": ["C_1"], "next": "C1_2" },
+    "C1_2": { "speaker": "zhanggui", "text": "后厨？那儿除了一口老卤缸，什么都没有啊。", "next": "C1_3" },
+    "C1_3": { "speaker": "pangdi",   "text": "（抄起大汤勺）我去听听。" },
+    "C2_1": { "speaker": "narrator", "text": "门帘后传来“咚、咚、咚”的闷响……还夹着吧唧嘴的声音。", "next": "C2_2" },
+    "C2_2": { "speaker": "pangdi",   "text": "谁！出来！我的大汤勺可不认人！", "next": "C2_3" },
+    "C2_3": { "speaker": "narrator", "text": "一只圆滚滚的黄猫叼着红布包窜了出来，一溜烟钻到了火锅桌底下。", "set": ["C_2"] },
+    "C3_1": { "speaker": "pangdi",   "text": "嘘——我敲锅，你们左右包抄。", "next": "C3_2" },
+    "C3_2": { "speaker": "narrator", "text": "“当！”黄猫吓得一松口，红布包落地——正是秘方锦囊，还沾着卤汁。", "set": ["C_3"], "next": "C3_3" },
+    "C3_3": { "speaker": "feifei",   "text": "原来是被卤香勾来的小贼。" },
+    "C4_1": { "speaker": "zhanggui", "text": "这不是咱家的猫“椒椒”嘛！难怪它昨夜一口饭都没吃。", "next": "C4_2" },
+    "C4_2": { "speaker": "pangdi",   "text": "它吃得比我还好……", "do": [{ "ending": "C" }] },
+
+    "zg_waitB": { "speaker": "zhanggui", "text": "辣不怕在招牌底下候着呢！锦囊能不能拿回来，就看你们这一战了。" },
+
+    // ================= 汇合：三条线都拿回同一个锦囊 =================
+    "M_1":  { "speaker": "zhanggui", "text": "锦囊回来了就好……来，当着你们三个的面，打开看看。", "next": "M_1b" },
+    "M_1b": { "speaker": "feifei",   "text": "辣不怕把锦囊还回来的时候说过一句怪话：“这味道，我只尝到了一半。”", "if": ["battle_B_win"], "else": "M_2", "next": "M_2" },
+    "M_2":  { "speaker": "narrator", "text": "红布锦囊里只有半张泛黄的方子，撕口歪歪扭扭，像是被人一把扯开的。", "set": ["ch1_done", "item_jinnang", "item_recipe_half"], "do": [{ "gain": "recipe_half" }], "next": "M_3" },
+    "M_3":  { "speaker": "xiaoman",  "text": "只有一半？", "next": "M_4" },
+    "M_4":  { "speaker": "zhanggui", "text": "……果然。你爷爷当年说过，这方子他和一位故人一人一半，谁也不许独吞。", "next": "M_5" },
+    "M_5":  { "speaker": "feifei",   "text": "方子背面有一行小字——“渝州·老码头”。", "next": "M_6" },
+    "M_6":  { "speaker": "pangdi",   "text": "老码头！那儿的夜市有全渝州最好吃的……咳，最好的线索。", "next": "M_7" },
+    "M_7":  { "speaker": "zhanggui", "text": "老码头的夜市亥时才热闹。你们去走一趟，把另一半方子请回来。店门就在前头。", "set": ["c2_start"], "do": [{ "title": "ch2" }] },
+
+    "door_locked": { "speaker": "zhanggui", "text": "锦囊还没着落，往哪儿跑？先把店里的事办了！" },
+    "zg_c2":  { "speaker": "zhanggui", "text": "老码头在城东，出了店门往江边走。记着，礼数要周到——那可是你爷爷的故人。" },
+    "zg_c2b": { "speaker": "zhanggui", "text": "码头那边查得怎么样？看看“当前目标”，别让红汤帮那帮人抢了先。" },
+
+    // ================= 第二章 · 老码头夜市 =================
+    "MK_1": { "speaker": "narrator", "text": "江风裹着辣香扑面而来。吊脚楼上挂满红灯笼，石板地上摊子挨着摊子——这就是渝州·老码头的夜市。", "set": ["c2_arrived"], "next": "MK_2" },
+    "MK_2": { "speaker": "pangdi",   "text": "（深吸一口气）炒辣子、老鹰茶、糖油果子……我宣布，这是我这辈子最好的一次查案。", "next": "MK_3" },
+    "MK_3": { "speaker": "feifei",   "text": "先办正事。炒锅摊那边有人在吆喝——那嗓门，我好像在哪儿听过。" },
+
+    // 辣不怕：走过飞飞线的玩家是“又见面”，没走过的是“初次见面”
+    "LP_1":  { "speaker": "labupa", "text": "（锅铲敲得震天响）十成辣子鸡——不辣不要钱！", "next": "LP_2" },
+    "LP_2":  { "speaker": "labupa", "text": "哟！这不是椒麻鸡火锅家的三个娃？招牌下那一仗我输得心服口服，干脆在码头支了个炒锅摊，换个地方接着辣！", "if": ["battle_B_win"], "else": "LP_2n", "next": "LP_3" },
+    "LP_2n": { "speaker": "labupa", "text": "你们是椒麻鸡火锅家的娃吧？昨晚我在你们店吃了一锅，够劲！可惜啊，总觉得那味道只辣到一半。", "next": "LP_2m" },
+    "LP_2m": { "speaker": "xiaoman", "text": "只辣到一半……因为方子本来就只有一半。我们正是来找另一半的。", "next": "LP_3" },
+    "LP_3":  { "speaker": "tongzi", "text": "师父师父，他们手里那张纸，跟那个提茶壶的人说的‘半张’是不是一回事？", "next": "LP_4" },
+    "LP_4":  { "speaker": "labupa", "text": "嘘！……老码头的事，问三个人最准：古玩摊的老周、灯谜摊的钱先生，还有——我。", "next": "LP_5" },
+    "LP_5":  { "speaker": "labupa", "text": "不过码头有码头的规矩，消息不白给。帮他们各办一件小事，我这儿嘛……今晚客人多，正缺个会颠勺的！", "set": ["c2_met_labupa"], "next": "LP_6" },
+    "LP_6":  { "speaker": "feifei", "text": "老周认物，钱先生斗嘴，辣不怕颠勺。小满、我、胖弟，正好一人一摊。" },
+    "LP_hint1": { "speaker": "labupa", "text": "还差哪家没去？右边“当前目标”里一清二楚。我这炒锅可等不了太久！" },
+    "LP_hint2": { "speaker": "labupa", "text": "红汤帮那几个莽汉堵着茶馆门呢。真要动手，我给你们掠阵——辣椒粉管够！" },
+    "LP_idle":  { "speaker": "labupa", "text": "方子凑齐了？好！改天开张，第一锅得让我尝。" },
+
+    "TZ_0": { "speaker": "tongzi", "text": "炒锅摊这边！我师父的辣子鸡，辣得船工都跳江！" },
+    "TZ_1": { "speaker": "tongzi", "text": "老周的眼睛贼尖，钱先生的嘴贼利，我师父的锅贼大！" },
+    "TZ_2": { "speaker": "tongzi", "text": "红汤帮的人凶巴巴的……打他们的时候记得喊我，我撒辣椒粉！" },
+    "TZ_3": { "speaker": "tongzi", "text": "老板娘的茶可好喝了，就是从来不给我续第二碗。" },
+
+    // —— 委托一：古玩摊 · 小满认家徽 ——
+    "S1_idle": { "speaker": "narrator", "text": "古玩摊上摊着铜钱、玉坠和一排旧铜牌。摊主老周缩在摊子后头打盹。" },
+    "E1_1": { "speaker": "laozhou", "text": "（从一堆铜钱后探出头）小娃娃，看中啥了？……哟，你腰上这块令牌，有点眼熟。", "do": [{ "leader": "xiaoman" }], "next": "E1_2" },
+    "E1_2": { "speaker": "xiaoman", "text": "这是满家的家徽。老伯见过一样的？", "next": "E1_3" },
+    "E1_3": { "speaker": "laozhou", "text": "二十年前有人在我这儿当过一块铜牌，花纹跟你们家徽一个路数。可后来仿的、真的混了一箱——认得出真家徽，我就把旧账翻给你看。",
+      "options": [
+        { "text": "我来认（小满）", "do": [{ "minigame": "emblem", "win": "E1_win" }], "next": null },
+        { "text": "等会儿再来", "next": null }
+      ] },
+    "E1_win": { "speaker": "laozhou", "text": "好眼力！一点没含糊。……旧账上写着：当铜牌的是个梳圆髻的姑娘，留了句话——“等满家的人来赎”。", "set": ["c2_e1_done", "clue_1"], "next": "E1_win2" },
+    "E1_win2": { "speaker": "xiaoman", "text": "一位姑娘……爷爷的故人，是位女子。", "next": "E1_win3" },
+    "E1_win3": { "speaker": "narrator", "text": "【线索一】当年收着另一半方子的，是一位女子。", "next": "CLUE_gate" },
+    "E1_after": { "speaker": "laozhou", "text": "那块铜牌我还留着呢，等你们方子凑齐了，拿一碗椒麻鸡来换。" },
+
+    // —— 委托二：灯谜摊 · 飞飞比口才 ——
+    "S2_idle": { "speaker": "narrator", "text": "灯谜摊下挂着一串红灯笼，每盏灯下坠着一条谜笺。摊主钱先生摇着折扇，谁也不搭理。" },
+    "E2_1": { "speaker": "qian", "text": "猜谜、对句、斗嘴，比的都是嘴上功夫。连赢我三阵，问啥答啥。", "do": [{ "leader": "feifei" }], "next": "E2_2" },
+    "E2_2": { "speaker": "feifei", "text": "（唰地展开折扇）折扇对折扇，正好。",
+      "options": [
+        { "text": "接擂（飞飞）", "do": [{ "minigame": "duel", "win": "E2_win" }], "next": null },
+        { "text": "改日再来", "next": null }
+      ] },
+    "E2_win": { "speaker": "qian", "text": "三阵全输，服气！你们想问那位故人？……当年码头上嘴最利的，是个爱喝老鹰茶的姑娘，就在江边支了个茶摊。", "set": ["c2_e2_done", "clue_2"], "next": "E2_win2" },
+    "E2_win2": { "speaker": "qian", "text": "后来茶摊成了茶馆，人也成了老板娘……再多的，我可就不知道了。", "next": "E2_win3" },
+    "E2_win3": { "speaker": "narrator", "text": "【线索二】那位女子以茶为业，当年的茶摊后来成了码头上的茶馆。", "next": "CLUE_gate" },
+    "E2_after": { "speaker": "qian", "text": "下回再来，我备好了新谜。输了的人请喝茶。" },
+
+    // —— 委托三：炒锅摊 · 胖弟帮颠勺 ——
+    "E3_1": { "speaker": "labupa", "text": "胖弟！你那大勺看着就有力气——来，帮我把这锅十成辣子鸡颠出来！", "do": [{ "leader": "pangdi" }], "next": "E3_2" },
+    "E3_2": { "speaker": "pangdi", "text": "颠勺？这个我熟！（撸起袖子）",
+      "options": [
+        { "text": "上灶（胖弟）", "do": [{ "minigame": "wok", "win": "E3_win" }], "next": null },
+        { "text": "等我吃饱再来", "next": null }
+      ] },
+    "E3_win": { "speaker": "labupa", "text": "好手艺！……对了，你们打听的人——每晚亥时三刻，都有人来我这儿买一份椒麻鸡，说是“给老朋友留着”，自己一口不吃。", "set": ["c2_e3_done", "clue_3"], "next": "E3_win2" },
+    "E3_win2": { "speaker": "tongzi", "text": "我知道！她提着一把铜茶壶来的，身上一股老鹰茶味儿！", "next": "E3_win3" },
+    "E3_win3": { "speaker": "narrator", "text": "【线索三】每晚来买椒麻鸡“留给老朋友”的，是一位提铜茶壶的人。", "next": "CLUE_gate" },
+    "E3_after": { "speaker": "labupa", "text": "这锅辣子鸡卖疯了！胖弟，以后码头要是混不下去，来给我当二把勺。" },
+
+    // —— 三条线索齐了：推理 ——
+    "CLUE_gate": { "speaker": "feifei", "text": "女子、茶馆、每晚为老朋友买椒麻鸡……线索齐了。", "if": ["c2_e1_done", "c2_e2_done", "c2_e3_done"], "set": ["c2_clues"], "next": "DED_2" },
+    "DED_1": { "speaker": "feifei", "text": "女子、茶馆、每晚为老朋友买椒麻鸡……线索齐了。", "set": ["c2_clues"], "next": "DED_2" },
+    "DED_2": { "speaker": "xiaoman", "text": "爷爷的故人，到底是谁？",
+      "options": [
+        { "text": "古玩摊的老周", "next": "DED_w1" },
+        { "text": "码头茶馆的老板娘", "next": "DED_ok" },
+        { "text": "灯谜摊的钱先生", "next": "DED_w2" }
+      ] },
+    "DED_w1": { "speaker": "pangdi", "text": "老周是个白胡子老爷子……跟“梳圆髻的姑娘”差得有点远。", "next": "DED_2" },
+    "DED_w2": { "speaker": "feifei", "text": "钱先生自己都说了“再多的不知道”。再想想。", "next": "DED_2" },
+    "DED_ok": { "speaker": "xiaoman", "text": "是码头茶馆的老板娘！她每晚提着铜茶壶来买椒麻鸡——替爷爷尝味道。", "set": ["c2_deduced"], "next": "DED_3" },
+    "DED_3": { "speaker": "labupa", "text": "茶馆老板娘？我这就带你们——等等，茶馆门口那几个穿红褂子的……是红汤帮的人！", "next": "DED_4" },
+    "DED_4": { "speaker": "narrator", "text": "不知何时，两个红汤帮打手抱着胳膊，堵在了茶馆门口。" },
+
+    // —— 红汤帮拦路 ——
+    "HT_1": { "speaker": "hongtang", "text": "站住！茶馆今晚不做生意。", "set": ["c2_ht_tried"], "next": "HT_2" },
+    "HT_2": { "speaker": "xiaoman", "text": "我们找老板娘有事。", "next": "HT_3" },
+    "HT_3": { "speaker": "hongtang", "text": "巧了，我们红汤帮也找她——为了那半张椒麻方子。识相的，滚回你们那小火锅店去！", "next": "HT_4" },
+    "HT_4": { "speaker": "pangdi", "text": "我们店不小！……好吧是不大，但锅大！",
+      "options": [
+        { "text": "动手吧！（进入战斗）", "do": [{ "battle": "hongtang" }], "next": null },
+        { "text": "先退一步，准备一下", "next": null }
+      ] },
+    "HT_retry": { "speaker": "hongtang", "text": "又来了？上回没辣够是吧！",
+      "options": [
+        { "text": "再战！（进入战斗）", "do": [{ "battle": "hongtang" }], "next": null },
+        { "text": "先退一步", "next": null }
+      ] },
+
+    // —— 茶馆老板娘 ——
+    "LB_idle": { "speaker": "laobanniang", "text": "（提着铜壶给船工续茶，瞥了你们一眼）年轻人，喝茶自己找座。" },
+    "LB_1": { "speaker": "laobanniang", "text": "（茶馆的门吱呀一声开了）打得好。外头吵了半宿，我这壶老鹰茶都凉了。", "next": "LB_2" },
+    "LB_2": { "speaker": "xiaoman", "text": "您就是……爷爷的故人？（亮出家徽令牌）", "next": "LB_3" },
+    "LB_3": { "speaker": "laobanniang", "text": "满家的家徽……二十年了。你爷爷当年在我茶摊上对了一夜对子，输了，非要把方子撕一半给我当茶钱。", "next": "LB_4" },
+    "LB_4": { "speaker": "laobanniang", "text": "他说：“椒麻要配茶，方子要配人。等满家出了能扛事的娃，让他们自己来取。”", "next": "LB_5" },
+    "LB_5": { "speaker": "feifei", "text": "所以您每晚去买一份椒麻鸡……", "next": "LB_6" },
+    "LB_6": { "speaker": "laobanniang", "text": "替那个老头子尝尝，味儿还对不对。（从袖中取出半张方子）拿去吧，这一半，我替他守够了。", "set": ["c2_got_half", "item_recipe_other"], "do": [{ "gain": "recipe_other" }], "next": "LB_7" },
+    "LB_7": { "speaker": "narrator", "text": "两张泛黄的半页纸，撕口歪歪扭扭——正好能对上。", "do": [{ "minigame": "combine", "win": "LB_8" }] },
+    "LB_combine": { "speaker": "narrator", "text": "两张半页方子还没合上。", "do": [{ "minigame": "combine", "win": "LB_8" }] },
+    "LB_8": { "speaker": "laobanniang", "text": "回去告诉满掌柜：方子背面还有东西，让他对着灯看。", "next": "LB_9" },
+    "LB_9": { "speaker": "laobanniang", "text": "去吧。老码头的夜还长，红汤帮也不会就此罢休。", "next": "LB_10" },
+    "LB_10": { "speaker": "pangdi", "text": "老板娘，下回来，我们带一锅十成椒麻请您！" },
+    "LB_after": { "speaker": "laobanniang", "text": "方子收好了？快回去吧，满掌柜该等急了。" },
+    "TH_look": { "speaker": "narrator", "text": "茶馆门口挑着“老鹰茶”的布幌子，几个船工捧着粗瓷碗，听江水拍着石阶。" },
+    "PIER_1": { "speaker": "narrator", "text": "渡口石阶一直伸进江里，几条乌篷船随着浪轻轻晃。对岸的灯火像撒了一江的辣椒籽。" },
+    "PIER_2": { "speaker": "pangdi", "text": "（朝江面大喊）有——人——卖——鱼——吗——" },
+
+    // —— 回店：解锁新菜 + 藏宝图钩子 ——
+    "ZG2_1": { "speaker": "zhanggui", "text": "回来了！方子……合上了？", "next": "ZG2_2" },
+    "ZG2_2": { "speaker": "xiaoman", "text": "合上了。老板娘托我们带句话：椒麻要配茶，方子要配人。", "next": "ZG2_3" },
+    "ZG2_3": { "speaker": "zhanggui", "text": "（眼眶一红）这老头子……好！照着这方子，今晚就给店里添一道新菜！", "set": ["c2_dish"], "do": [{ "card": "dish", "then": "ZG2_5" }] },
+    "ZG2_5": { "speaker": "narrator", "text": "满掌柜把方子举到灯下。纸背透出一片淡淡的墨痕——弯弯的江流、层层的山峦，还有一个朱砂点的小圈。", "next": "ZG2_6" },
+    "ZG2_6": { "speaker": "feifei", "text": "这是……一张藏宝图？", "next": "ZG2_7" },
+    "ZG2_7": { "speaker": "pangdi", "text": "宝？能吃吗？", "next": "ZG2_8" },
+    "ZG2_8": { "speaker": "zhanggui", "text": "朱砂圈画在巫山脚下。看来你爷爷留下的，不止一道菜。", "next": "ZG2_9" },
+    "ZG2_9": { "speaker": "xiaoman", "text": "（把方子小心收好）那就——下一站，巫山。", "set": ["c2_finale", "item_treasure_map"], "do": [{ "finale": true }] },
+    "zg_end": { "speaker": "zhanggui", "text": "新菜卖得可好了！巫山的事，等你们歇够了再说。" }
+  }
+};
