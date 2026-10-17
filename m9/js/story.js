@@ -142,9 +142,9 @@
       location.reload();
     });
     panel.appendChild(btn);
-    // M9：骨骼动画开关（同 ?rig=0）
+    // M9：骨骼动画开关（默认只控制小满；?rig=all 时控制全员）
     var rb = document.createElement("button"); rb.id = "rig-toggle";
-    var lab = function () { rb.textContent = "骨骼动画：" + (window.Rig && window.Rig.enabled() ? "开" : "关"); };
+    var lab = function () { rb.textContent = (/[?&]rig=all/.test(location.search) ? "骨骼动画（全员）：" : "小满骨骼动画：") + (window.Rig && window.Rig.enabled() ? "开" : "关"); };
     lab(); rb.addEventListener("click", function () { if (window.Rig) { window.Rig.setEnabled(!window.Rig.enabled()); lab(); } });
     panel.appendChild(rb);
   }

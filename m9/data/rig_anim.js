@@ -1,7 +1,10 @@
 // M9 骨骼动画参数（数据文件，可调）。角度单位：度；像素单位：原画布像素（1024×1536 立绘），运行时 × prepScale × spriteScale。
 // 步态与位移同步：基础速度下一个 walk 循环 = cycleMs，跟随者走得快时步频按速度同比加快（不滑步）。
 // 左右一律按画面：armL = 画面左侧手臂，armR = 画面右侧。
+// 骨骼动画白名单：默认只有这些角色走骨骼（项目范围：先只做小满）。?rig=all 启用全员运行时切图（实验），?rig=0 全关。
+window.RIG_CHARS = ['xiaoman'];
 window.RIG_ANIM = {
+  "RIG_CHARS": window.RIG_CHARS,
   "default": {
     "cycleMs": 600,        // walk 循环
     "legDeg": 7,           // 腿摆幅

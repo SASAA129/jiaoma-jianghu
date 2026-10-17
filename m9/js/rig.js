@@ -6,7 +6,12 @@
   var cache = {}, OV = 3;
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  // 模式：默认只有白名单 RIG_CHARS（小满）走骨骼，其余角色保持 M8 整图；?rig=all 全员运行时切图；?rig=0 全关。
+  // 探索面板开关 / localStorage jiaoma_rig 只控制白名单角色（?rig=all 时控制全员）。
+  var allMode = /[?&]rig=all/.test(location.search);
+  var WL = window.RIG_CHARS || ((window.RIG_ANIM || {}).RIG_CHARS) || ["xiaoman"];
   var enabled = !/[?&]rig=0/.test(location.search) && lsGet("jiaoma_rig") !== "0";
+  function allowed(id) { return allMode || WL.indexOf(id) >= 0; }
   function cfgOf(def) { return def && def.rig === false ? false : ((def && def.rig) || {}); }
   function charIdOf(spriteName) { return spriteName.replace(/^(char|npc)_/, "").replace(/_back$/, ""); }
 
@@ -61,6 +66,7 @@
   }
   function get(name, def, back) {
     var S = window.Sprites, r = S && S.get(name); if (!r) return null;
+    if (!allowed(charIdOf(name))) return null;      // 白名单外：整图（不进 cache，不算回退）
     var cfg = cfgOf(def); if (cfg === false) return null;
     var k = name; if (cache[k] !== undefined) return cache[k];
     var view = back ? "back" : "front", rig = null;
@@ -128,11 +134,14 @@
   window.Rig = {
     get: get, poseOf: poseOf, phaseRate: phaseRate, anim: animOf, draw: function (ctx, rig, P, id) { draw(ctx, rig, P); if (id) lastBy[id] = P; },
     enabled: function () { return enabled; },
+    mode: function () { return !enabled ? "off" : allMode ? "all" : "chars"; },
+    whitelist: function () { return WL.slice(); },
+    allowed: allowed,
     setEnabled: function (v) { enabled = !!v; lsSet("jiaoma_rig", v ? "1" : "0"); },
     state: function () {
       var built = {}; Object.keys(cache).forEach(function (k) { built[k] = cache[k] ? Object.keys(cache[k].parts).length + ":" + cache[k].src + (cache[k].src === "art" ? "(" + cache[k].from + ")" : "") : "fallback"; });
-      return { enabled: enabled, built: built, pose: JSON.parse(JSON.stringify(lastBy)) };
+      return { enabled: enabled, mode: !enabled ? "off" : allMode ? "all" : "chars", whitelist: WL.slice(), built: built, pose: JSON.parse(JSON.stringify(lastBy)) };
     },
-    fallbackList: function () { return Object.keys(C.list).filter(function (k) { return C.list[k].rig === false; }); }
+    fallbackList: function () { return Object.keys(C.list).filter(function (k) { return C.list[k].rig === false; }); }   // ?rig=all 时整图回退的角色
   };
 })();

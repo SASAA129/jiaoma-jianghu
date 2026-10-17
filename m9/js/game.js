@@ -104,13 +104,14 @@
     if (ch.to) {
       var sp = SPEED * (idx > 0 && ch.path.length > 0 ? 1.35 : 1);
       ch.t += dt * sp / ch.segLen;
+      ch.phase8 = (ch.phase8 || 0) + dt * sp * Math.PI * 2;   // M8 原相位：整图角色沿用 M8 的颠和摆
       ch.phase += dt * (window.Rig ? window.Rig.phaseRate(null, sp, SPEED) : sp * Math.PI);   // M9：相位按位移推进；基础速度下一个步态循环 = RIG_ANIM.cycleMs（600ms），跟随者快走步频同比加快，不滑步
       if (ch.t >= 1) {
         var over = (ch.t - 1) * ch.segLen;
         ch.cell = ch.to; ch.to = null;
         if (ch.path.length) { startStep(ch, idx); ch.t = over / ch.segLen; }
         else {
-          ch.t = 0; ch.back = false; ch.phase = 0;
+          ch.t = 0; ch.back = false; ch.phase = 0; ch.phase8 = 0;
           if (idx === 0 && ch.onArrive) { var cb = ch.onArrive; ch.onArrive = null; cb(); }
         }
       }
@@ -242,14 +243,15 @@
     var rname = ch.back && ch.def.back && S.get(ch.def.back) ? ch.def.back : ch.def.sprite;
     var rig = window.Rig && window.Rig.enabled() && S.get(rname) ? window.Rig.get(rname, ch.def, rname !== ch.def.sprite) : null;
     // 骨骼模式：起伏/呼吸由 Rig 按 RIG_ANIM（bobPx/breathPx，原画布像素）在立绘坐标里做；整图回退保持原来的颠
-    var bob = walkingNow ? (rig ? 0 : Math.abs(Math.sin(ch.phase)) * H * .028) : (rig ? 0 : Math.sin(time * 2 + ch.pos.x) * H * .004);
-    var sway = walkingNow && !rig ? Math.sin(ch.phase) * .035 : 0;
+    var ph = rig ? ch.phase : (ch.phase8 || 0);   // 非骨骼角色：与 M8 完全一致的整图绘制
+    var bob = walkingNow ? (rig ? 0 : Math.abs(Math.sin(ph)) * H * .028) : (rig ? 0 : Math.sin(time * 2 + ch.pos.x) * H * .004);
+    var sway = walkingNow && !rig ? Math.sin(ph) * .035 : 0;
     if (M.night) {   // 夜市：足底一圈暖色灯光，人物在偏蓝的夜景里更好认
       ctx.save(); var gl = ctx.createRadialGradient(f.x, f.y, 4, f.x, f.y, M.tileW * .62);
       gl.addColorStop(0, "rgba(255,170,90,.34)"); gl.addColorStop(1, "rgba(255,170,90,0)");
       ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(f.x, f.y, M.tileW * .62, M.tileH * .62, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
-    drawShadow(f, walkingNow ? 1 - Math.abs(Math.sin(ch.phase)) * .12 : 1);
+    drawShadow(f, walkingNow ? 1 - Math.abs(Math.sin(ph)) * .12 : 1);
     var name = ch.back && ch.def.back && S.get(ch.def.back) ? ch.def.back : ch.def.sprite;
     var r = S.get(name);
     ctx.save();
