@@ -1,5 +1,5 @@
 // 由 tools/prep_assets.py 自动生成，请勿手改。重跑 prep 即可更新。
-// 生成时间：2026-10-17 10:09:40  源目录：art/locked → art/ch4 → art/ch3 → art/m5 → art/m4 → art/m3
+// 生成时间：2026-10-17 10:26:45  源目录：art/locked → art/ch4 → art/ch3 → art/m5 → art/m4 → art/m3
 window.ASSETS = {
   "bg_room": {
     "file": "bg_room_clean.png",
@@ -274,8 +274,8 @@ window.ASSETS = {
     "src": "assets/npc_tongzi.png"
   },
   "bg_battle": {
-    "file": "bg_battle.png",
-    "from": "locked",
+    "file": "bg_battle_clean.png",
+    "from": "ch7",
     "srcW": 1536,
     "srcH": 1024,
     "w": 1536,
