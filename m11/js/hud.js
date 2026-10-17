@@ -1,0 +1,151 @@
+// M11 手机菜单框架（占位图，方案待用户批准）：不随 1536×1024 舞台缩放的 HUD 层，用 CSS px + 刘海屏安全区。
+// 布局按 game-design/jiaoma/mobile_m11_plan.md：左上头像 + 血蓝条；左侧任务追踪（只显示当前目标）；
+// 右上地名 + 地图入口；右下 6 个圆形快捷按钮（背包 / 武学 / 伙伴 / 任务 / 菜谱 / 设置），取代旧的底部菜单栏（队伍卡 + 按钮）。
+// 不做：虚拟摇杆、点任务自动寻路、自动战斗、二倍速、出手顺序条改动、对话自动/快进、自动存档改动（等用户批准方案）。
+(function () {
+  var BTNS = [
+    { id: "bag", label: "背包", img: "bag" },
+    { id: "wuxue", label: "武学", img: "wuxue" },
+    { id: "huoban", label: "伙伴", img: "huoban" },
+    { id: "renwu", label: "任务", img: "renwu" },
+    { id: "caipu", label: "菜谱", img: "caipu" },
+    { id: "shezhi", label: "设置", img: "shezhi" }
+  ];
+  var root, panel, panelKind = null, lastSig = "", resetArmed = 0;
+  function $(s, r) { return (r || root).querySelector(s); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function flags() { return (window.Dialog && window.Dialog.flags) || {}; }
+  function cond(o) { return window.UI && window.UI.cond ? window.UI.cond(o) : true; }
+  function stats(id) {
+    var d = window.CHARACTERS.list[id] || {}, b = (window.BATTLE && window.BATTLE.party[id]) || {};
+    var hp = d.hp || [b.hp, b.hp], mp = d.mp || [b.mp, b.mp];
+    return { name: d.name, sprite: d.sprite, color: d.color, hp: hp, mp: mp, spd: b.spd, atk: b.atk, def: b.def, skills: b.skills || [] };
+  }
+  function bar(cls, v) { return '<div class="hud-bar ' + cls + '"><i style="width:' + Math.max(0, Math.min(100, v[0] / v[1] * 100)) + '%"></i><span>' + v[0] + "/" + v[1] + "</span></div>"; }
+
+  function build() {
+    root = document.createElement("div"); root.id = "hud";
+    root.innerHTML =
+      '<div class="hud-tl">' +
+        '<button class="hud-avatar" data-hud="huoban" aria-label="伙伴"><img class="hud-frame" src="assets/ui/ui_hud_portrait_frame.png" alt=""><canvas width="120" height="120"></canvas></button>' +
+        '<div class="hud-stat"><div class="hud-name"></div><div class="hud-bars"></div></div>' +
+      "</div>" +
+      '<div class="hud-track" aria-live="polite"><div class="hud-track-t">当前目标</div><div class="hud-track-x"></div></div>' +
+      '<div class="hud-tr"><div class="hud-loc"></div><button class="hud-map" data-hud="map" aria-label="地图"><img src="assets/ui/ui_btn_round_map.png" alt=""><span>地图</span></button></div>' +
+      '<div class="hud-br">' + BTNS.map(function (b) {
+        return '<button class="hud-rb" data-hud="' + b.id + '" aria-label="' + b.label + '"><img src="assets/ui/ui_btn_round_' + b.img + '.png" alt=""><span>' + b.label + "</span></button>";
+      }).join("") + "</div>";
+    document.body.appendChild(root);
+    panel = document.createElement("div"); panel.id = "hud-panel"; panel.className = "hidden";
+    document.body.appendChild(panel);
+    root.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    panel.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    root.addEventListener("click", function (e) { var b = e.target.closest("[data-hud]"); if (b) act(b.getAttribute("data-hud")); });
+    panel.addEventListener("click", onPanelClick);
+    window.addEventListener("keydown", function (e) { if (panelKind && e.key === "Escape") { closePanel(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+    // 让游戏把 HUD 面板当作“界面挡住”，点地不会走路
+    if (window.UI && window.UI.blocking) { var ob = window.UI.blocking; window.UI.blocking = function () { return ob() || !!panelKind; }; }
+    document.documentElement.classList.add("m11-hud");
+    setInterval(tick, 200); tick();
+  }
+
+  function act(id) {
+    if (id === "map") { if (window.Game) window.Game.hideMenu(); if (window.WorldMap && window.WorldMap.open()) return; if (window.Game) window.Game.toast("地图 · 暂不可用"); return; }
+    openPanel(id);
+  }
+
+  // ---------- 面板（CSS px，正文 ≥15px，按钮 ≥44px） ----------
+  function openPanel(kind) {
+    var head = { bag: "背 包", wuxue: "武 学", huoban: "伙 伴", renwu: "任 务", caipu: "菜 谱", shezhi: "设 置" }[kind], body = "";
+    var CH = window.CHAPTERS || { items: [], clues: [] }, B = window.BATTLE || { skills: {} }, party = window.CHARACTERS.party;
+    if (kind === "bag") {
+      var items = (CH.items || []).filter(cond);
+      body = items.length ? '<div class="hp-list">' + items.map(function (it) {
+        return '<div class="hp-row"><b>' + esc(it.name) + (it.count ? " ×" + it.count : "") + "</b><small>" + esc(it.desc || "") + "</small></div>";
+      }).join("") + "</div>" : '<p class="hp-empty">背包是空的。</p>';
+    } else if (kind === "wuxue") {
+      body = party.map(function (id) {
+        var s = stats(id);
+        return '<div class="hp-sec"><h3>' + esc(s.name) + "</h3>" + s.skills.map(function (k) {
+          var sk = B.skills[k] || { name: k };
+          return '<div class="hp-row"><b>「' + esc(sk.name) + "」</b><small>" + esc(sk.desc || "") + (sk.mp ? " · 内力 " + sk.mp : "") + "</small></div>";
+        }).join("") + "</div>";
+      }).join("") + '<p class="hp-note">占位：只列出现有招式；招式/心法/等级等用户批准后再做。</p>';
+    } else if (kind === "huoban") {
+      var lead = window.Game && window.Game.leaderId();
+      body = '<div class="hp-party">' + party.map(function (id) {
+        var s = stats(id);
+        return '<div class="hp-mem' + (id === lead ? " lead" : "") + '" data-mem="' + id + '"><canvas width="120" height="120" data-sp="' + s.sprite + '" data-nm="' + esc(s.name) + '" data-col="' + (s.color || "#3b3a44") + '"></canvas>' +
+          '<div class="hp-mem-x"><b>' + esc(s.name) + (id === lead ? '<em>队长</em>' : "") + "</b>" + bar("hp", s.hp) + bar("mp", s.mp) +
+          '<div class="hp-nums"><span>身法 ' + s.spd + "</span><span>攻 " + s.atk + "</span><span>防 " + s.def + "</span></div>" +
+          (id === lead ? "" : '<button class="hp-btn" data-lead="' + id + '">设为队长</button>') + "</div></div>";
+      }).join("") + "</div>";
+    } else if (kind === "renwu") {
+      var o = window.Story ? window.Story.objective() : { text: "" };
+      body = '<div class="hp-sec"><h3>当前目标</h3><p class="hp-goal">' + esc(o.text) + "</p>" + (o.via ? '<p class="hp-via">→ 先去「' + esc(o.via) + "」</p>" : "") +
+        (o.checklist ? '<div class="hp-list">' + o.checklist.map(function (c) { return '<div class="hp-row' + (c.done ? " done" : "") + '"><b>' + (c.done ? "✔ " : "· ") + esc(c.text) + "</b></div>"; }).join("") + "</div>" : "") + "</div>";
+      var clues = (CH.clues || []).filter(cond);
+      body += '<div class="hp-sec"><h3>线索</h3>' + (clues.length ? clues.map(function (c) { return "<p>" + esc(c.text) + "</p>"; }).join("") : '<p class="hp-empty">还没有线索。</p>') + "</div>";
+    } else if (kind === "caipu") {
+      body = '<p class="hp-empty">还没有学会的菜谱。</p><p class="hp-note">占位面板：采集与烹饪玩法待用户批准后再做。</p>';
+    } else if (kind === "shezhi") {
+      var rig = window.Rig && window.Rig.enabled();
+      body = '<div class="hp-set">' +
+        '<button class="hp-btn wide" data-set="rig">三人骨骼动画：' + (rig ? "开" : "关") + "</button>" +
+        '<button class="hp-btn wide" data-set="title">回主菜单</button>' +
+        '<button class="hp-btn wide danger" data-set="reset">重置存档</button>' +
+        '<p class="hp-note">存档目前是自动存档（进场景/剧情节点）。手动存档位、摇杆开关等等方案批准后加入。</p></div>';
+    } else return false;
+    panel.innerHTML = '<div class="hp-box" role="dialog" aria-label="' + head.replace(/ /g, "") + '"><div class="hp-head"><span>' + head + '</span><button class="hp-close" data-close="1" aria-label="关闭">✕</button></div><div class="hp-body">' + body + "</div></div>";
+    panel.dataset.kind = kind; panelKind = kind;
+    panel.querySelectorAll("canvas[data-sp]").forEach(function (cv) { window.Sprites.drawPortrait(cv, cv.dataset.sp, cv.dataset.nm, cv.dataset.col); });
+    if (window.Game) window.Game.hideMenu();
+    panel.classList.remove("hidden");
+    return true;
+  }
+  function closePanel() { panel.classList.add("hidden"); panelKind = null; }
+  function onPanelClick(e) {
+    if (e.target === panel || e.target.closest("[data-close]")) { closePanel(); return; }
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.lead) { window.Game.setLeader(b.dataset.lead); openPanel("huoban"); return; }
+    var s = b.dataset.set;
+    if (s === "rig" && window.Rig) { window.Rig.setEnabled(!window.Rig.enabled()); openPanel("shezhi"); }
+    else if (s === "title") { closePanel(); window.UI.showTitle(); }
+    else if (s === "reset") {
+      if (Date.now() - resetArmed > 3000) { resetArmed = Date.now(); b.textContent = "再点一次确认重置"; setTimeout(function () { b.textContent = "重置存档"; }, 3000); return; }
+      window.Save.reset(); var f = flags(); Object.keys(f).forEach(function (k) { delete f[k]; }); window.Save.reset();
+      try { sessionStorage.setItem("jm11_new", "1"); } catch (er) {}
+      location.reload();
+    }
+  }
+
+  // ---------- 刷新 ----------
+  function hiddenNow() {
+    var u = window.UI && window.UI.state ? window.UI.state() : { open: {} };
+    var o = u.open || {};
+    return !!(o.title || o.panel || o.card || o.cg || u.chapter || (window.Battle && window.Battle.isOpen()) || (window.MiniGames && window.MiniGames.isOpen()) ||
+      (window.WorldMap && window.WorldMap.isOpen()) || (window.Story && window.Story.isCardOpen && window.Story.isCardOpen()) || (window.Editor && window.Editor.isActive()));
+  }
+  function tick() {
+    if (!root || !window.Game || !window.Game.leaderId) return;
+    var hide = hiddenNow(), talking = window.Dialog && window.Dialog.isOpen();
+    root.classList.toggle("off", hide);
+    root.classList.toggle("talking", !!talking);
+    if (hide && panelKind) closePanel();
+    var id = window.Game.leaderId(); if (!id) return;
+    var s = stats(id), o = window.Story ? window.Story.objective() : { text: "" };
+    var loc = (document.querySelector("#topbar .loc") || {}).textContent || "", tm = (document.querySelector("#topbar .time") || {}).textContent || "";
+    var sig = [id, s.hp, s.mp, o.text, o.via, loc, tm, !!(window.Sprites.get && window.Sprites.get(s.sprite))].join("|");
+    if (sig === lastSig) return; lastSig = sig;
+    window.Sprites.drawPortrait($(".hud-avatar canvas"), s.sprite, s.name, s.color);
+    $(".hud-name").textContent = s.name;
+    $(".hud-bars").innerHTML = bar("hp", s.hp) + bar("mp", s.mp);
+    $(".hud-track-x").textContent = o.text + (o.via ? "（先去「" + o.via + "」）" : "");
+    $(".hud-loc").innerHTML = esc(loc) + (tm ? "<em>" + esc(tm) + "</em>" : "");
+  }
+
+  function init() { if (!root) build(); }
+  window.Hud = { init: init, open: openPanel, close: closePanel, tick: tick,
+    state: function () { return { panel: panelKind, hidden: root ? root.classList.contains("off") : true, buttons: BTNS.map(function (b) { return b.id; }) }; } };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(init, 0); }); else setTimeout(init, 0);
+})();

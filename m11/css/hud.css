@@ -1,0 +1,70 @@
+/* M11 手机菜单框架（占位）：HUD 不随舞台缩放，全部用 CSS px；四边让开刘海屏安全区。 */
+:root { --sl: max(10px, env(safe-area-inset-left)); --sr: max(10px, env(safe-area-inset-right)); --st: max(8px, env(safe-area-inset-top)); --sb: max(8px, env(safe-area-inset-bottom)); --rb: 52px; }
+/* 旧底部菜单栏（队伍卡 + 五个按钮）和探索面板里重复的“当前目标”由 HUD 取代 */
+.m11-hud #menu-btns, .m11-hud #party, .m11-hud #explore #objective { display: none !important; }
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 40; font-family: "Noto Serif CJK SC", "Songti SC", serif; color: #f3e7ce; -webkit-user-select: none; user-select: none; }
+#hud.off { display: none; }
+#hud button { pointer-events: auto; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#hud button:active { transform: scale(.94); }
+/* 左上：头像 + 血蓝条 */
+.hud-tl { position: absolute; left: var(--sl); top: var(--st); display: flex; align-items: center; pointer-events: auto; }
+.hud-avatar { position: relative; width: 60px; height: 60px; flex: none; }
+.hud-avatar canvas { position: absolute; left: 5px; top: 5px; width: 50px; height: 50px; border-radius: 50%; }
+.hud-frame { position: absolute; left: 0; top: 0; width: 60px; height: 60px; object-fit: cover; object-position: left; clip-path: circle(50%); }
+.hud-stat { margin-left: -6px; padding: 5px 10px 6px 14px; background: rgba(40, 30, 24, .78); border: 2px solid #7a5434; border-left: 0; border-radius: 0 12px 12px 0; min-width: 132px; }
+.hud-name { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.hud-bar { position: relative; height: 15px; margin-top: 3px; background: rgba(0, 0, 0, .45); border-radius: 8px; overflow: hidden; }
+.hud-bar i { position: absolute; left: 0; top: 0; bottom: 0; }
+.hud-bar.hp i { background: linear-gradient(#e0574a, #a8281f); }
+.hud-bar.mp i { background: linear-gradient(#5b9be0, #2a5fa8); }
+.hud-bar span { position: relative; display: block; font-size: 14px; line-height: 15px; text-align: center; font-family: system-ui, sans-serif; text-shadow: 0 1px 2px #000; }
+#hud.talking .hud-tl { opacity: .55; }
+/* 左侧：任务追踪（只显示当前目标） */
+.hud-track { position: absolute; left: var(--sl); top: calc(var(--st) + 72px); max-width: 190px; padding: 6px 10px 8px; background: rgba(40, 30, 24, .72); border-left: 4px solid #b23026; border-radius: 0 10px 10px 0; }
+.hud-track-t { font-size: 14px; color: #e8b46a; letter-spacing: 2px; }
+.hud-track-x { font-size: 15px; line-height: 1.35; margin-top: 2px; }
+#hud.talking .hud-track { display: none; }
+/* 右上：地名 + 地图入口 */
+.hud-tr { position: absolute; right: var(--sr); top: var(--st); display: flex; align-items: center; gap: 8px; }
+.hud-loc { font-size: 15px; padding: 5px 12px; background: rgba(40, 30, 24, .72); border-radius: 14px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-map, .hud-rb { position: relative; width: var(--rb); height: var(--rb); flex: none; }
+.hud-map img, .hud-rb img { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+.hud-map span, .hud-rb span { position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%); font-size: 14px; line-height: 1; padding: 2px 6px; white-space: nowrap; background: rgba(40, 30, 24, .85); border-radius: 8px; }
+/* 右下：一排 6 个圆形快捷按钮 */
+.hud-br { position: absolute; right: var(--sr); bottom: calc(var(--sb) + 4px); display: flex; gap: 8px; }
+#hud.talking .hud-br, #hud.talking .hud-tr .hud-map { display: none; }
+@media (max-width: 420px) { :root { --rb: 46px; } .hud-br { gap: 6px; } .hud-loc { max-width: 120px; } }
+/* 面板 */
+#hud-panel { position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: var(--st) var(--sr) var(--sb) var(--sl); }
+#hud-panel.hidden { display: none; }
+.hp-box { width: min(640px, 100%); max-height: 100%; display: flex; flex-direction: column; color: #3b2a1e; background: #f5ecd7; border: 6px solid #7a5434; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.5); font-family: "Noto Serif CJK SC", serif; }
+.hp-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 4px 16px; border-bottom: 2px solid #b23026; font-size: 18px; font-weight: 700; letter-spacing: 4px; }
+.hp-close { width: 44px; height: 44px; font-size: 20px; border: 0; background: none; color: #7a5434; cursor: pointer; }
+.hp-body { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; padding: 8px 16px 14px; font-size: 15px; line-height: 1.5; }
+.hp-body h3 { font-size: 16px; color: #b23026; margin: 6px 0 4px; }
+.hp-row { padding: 8px 0; border-bottom: 1px dashed #cdb894; min-height: 28px; }
+.hp-row b { display: block; font-size: 15px; } .hp-row small { display: block; font-size: 14px; color: #6b5642; }
+.hp-row.done b { color: #8a8a7a; text-decoration: line-through; }
+.hp-empty { color: #8a7560; font-size: 15px; text-align: center; padding: 18px 0; }
+.hp-note { font-size: 14px; color: #8a7560; margin-top: 8px; }
+.hp-goal { font-size: 16px; font-weight: 700; } .hp-via { font-size: 14px; color: #b23026; }
+.hp-party { display: grid; gap: 8px; }
+.hp-mem { display: flex; gap: 10px; align-items: center; padding: 8px; border: 2px solid #d9c7a4; border-radius: 10px; }
+.hp-mem.lead { border-color: #b23026; }
+.hp-mem canvas { width: 64px; height: 64px; border-radius: 50%; flex: none; background: #e9dcc0; }
+.hp-mem-x { flex: 1; min-width: 0; }
+.hp-mem-x b { font-size: 16px; } .hp-mem-x em { font-style: normal; font-size: 14px; color: #fff; background: #b23026; border-radius: 6px; padding: 0 6px; margin-left: 6px; }
+.hp-mem .hud-bar { height: 16px; margin-top: 4px; background: #5a4a3a; border-radius: 8px; position: relative; overflow: hidden; }
+.hp-mem .hud-bar i { position: absolute; left: 0; top: 0; bottom: 0; } .hp-mem .hud-bar.hp i { background: #c23b2e; } .hp-mem .hud-bar.mp i { background: #3d78c2; }
+.hp-mem .hud-bar span { position: relative; display: block; text-align: center; font-size: 14px; line-height: 16px; color: #fff; font-family: system-ui, sans-serif; }
+.hp-nums { display: flex; gap: 12px; font-size: 14px; margin-top: 4px; }
+.hp-btn { min-width: 88px; min-height: 44px; margin-top: 6px; font: inherit; font-size: 15px; color: #f5ecd7; background: #7a5434; border: 0; border-radius: 10px; cursor: pointer; touch-action: manipulation; }
+.hp-btn.wide { display: block; width: 100%; margin: 8px 0; } .hp-btn.danger { background: #a8281f; }
+@media (hover: hover) { .hp-btn:hover { filter: brightness(1.1); } }
+/* 旧顶栏地名由 HUD 右上地名（含时辰）取代；探索面板让开 HUD（舞台坐标 1536×1024） */
+.m11-hud #topbar { display: none !important; }
+.m11-hud #stage #explore { top: 190px; max-height: 620px; overflow-y: auto; }
+.m11-hud #stage.scene-river #explore { top: 440px; max-height: 520px; }
+.hud-loc em { font-style: normal; font-size: 14px; color: #e8b46a; margin-left: 8px; }
+/* 「重置存档」「骨骼动画」移进「设置」面板；键盘提示在触屏上没用 */
+.m11-hud #explore #reset-save, .m11-hud #explore #rig-toggle, .m11-hud #explore .hint { display: none !important; }
