@@ -294,7 +294,7 @@
   function drawProp(p) {
     var r = S.get(p.sprite), fw = (p.w + p.h) * M.tileW / 2;
     if (r) {
-      var k = fw / r.meta.w * (p.scale || 1), v = G(p.x + p.w, p.y + p.h);
+      var k = fw / r.meta.w * (p.scale || 1) * (r.meta.dispScale || 1), v = G(p.x + p.w, p.y + p.h);   // M15：dispScale = 覆盖表里的显示宽度倍率（锚点不动）
       ctx.drawImage(r.img, v.x - r.meta.ax * k + (p.offX || 0), v.y - (r.meta.ay || r.meta.h) * k + (p.offY || 0), r.meta.w * k, r.meta.h * k);   // M15：按脚底锚点 ay 落地（旧图 ay = h）
     } else if (p.ph === "stall") S.placeholderStall(ctx, M, p);
     else if (p.ph === "jars") S.placeholderJars(ctx, M, p);
@@ -408,7 +408,7 @@
     // 桌子贴图范围内、但点到的不是可走格（例如桌面上方）也算点桌子
     M.props.filter(visible).forEach(function (pr) {
       var r = S.get(pr.sprite); if (!r || res || walkable(c.x, c.y)) return;
-      var fw = (pr.w + pr.h) * M.tileW / 2, k = fw / r.meta.w * (pr.scale || 1), v = G(pr.x + pr.w, pr.y + pr.h);
+      var fw = (pr.w + pr.h) * M.tileW / 2, k = fw / r.meta.w * (pr.scale || 1) * (r.meta.dispScale || 1), v = G(pr.x + pr.w, pr.y + pr.h);
       if (inRect(p, { x: v.x - r.meta.ax * k, y: v.y - (r.meta.ay || r.meta.h) * k, w: r.meta.w * k, h: r.meta.h * k })) res = interactable(pr.id);
     });
     return res;

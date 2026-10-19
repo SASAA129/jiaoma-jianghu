@@ -42,7 +42,7 @@ window.MAP_ARENA = {
       "hit": { "x": 360, "y": 700, "w": 180, "h": 100 }, "label": "助阵席",
       "if": ["c6_registered"] },
     { "id": "pot", "name": "天下第一锅", "kind": "sign", "cells": [[4, 2], [5, 2], [4, 3], [5, 3]],
-      "hit": { "x": 680, "y": 360, "w": 200, "h": 150 }, "label": "巨锅" },
+      "hit": { "x": 744, "y": 360, "w": 200, "h": 150 }, "label": "巨锅" },   // M15：热区跟新锅图（锅身中心 x≈844）重标，旧值 x=680
     { "id": "chilaosan", "name": "赤老三", "kind": "npc", "cells": [[2, 3]],
       "if": ["c6_rounds"], "ifNot": ["c6_final_win"] },
     { "id": "back_hq", "name": "回红汤楼", "kind": "exit", "to": "hq", "entrance": "from_village",

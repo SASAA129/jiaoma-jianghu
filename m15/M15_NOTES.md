@@ -29,7 +29,7 @@
 | prop_red_cauldron（红汤大鼎） | art/ch5/prop_red_cauldron.png · 1024×1024 RGBA · 1219KB | assets/prop_red_cauldron.png 852×951（ax 425, ay 951） | assets/prop_red_cauldron_flat.png 757×871 · ax 340, ay 869 |
 | prop_giant_pot（天下第一锅） | art/ch6/prop_giant_pot.png · 1024×1024 RGBA · 1094KB | assets/prop_giant_pot.png 900×807（ax 449, ay 807） | assets/prop_giant_pot_flat.png 758×847 · ax 374, ay 846 |
 
-两口锅：`drawProp` 与点击判定改按 `meta.ay` 落地（旧图 ay = h，不受影响）；脚底锚点 (ax, ay) 落在旧锅同一个地面点 `G(x+w, y+h)`，显示宽度沿用旧图（`(w+h)·tileW/2·scale`）。
+两口锅：显示宽度倍率 `meta.dispScale`（大鼎 0.95、巨锅 0.88，17:38 微调）；`drawProp` 与点击判定改按 `meta.ay` 落地（旧图 ay = h，不受影响）；脚底锚点 (ax, ay) 落在旧锅同一个地面点 `G(x+w, y+h)`，显示宽度沿用旧图（`(w+h)·tileW/2·scale`）。
 
 ## 3. 逐章核对（新图 vs 旧图叠图：可走格、NPC 站位、热区、摆件、出生点、出口）
 五张新图构图与旧图一致，叠图检查（/tmp/m14p/ov_*_{old,new}.png）全部对得上，碰撞 / 站位 / 出口无需重标。新图上没有画进去的招牌字；名牌改为避开代码画的出口木牌（`Story.hookRects()`，火锅店保持 M14 摆法）。
@@ -60,3 +60,7 @@
 - 2026-10-19 17:19 publish.sh 加 M15（待验收置顶）、M14 改已锁定；DRY 运行：安全扫描 / 路径大小写通过，site/m13、site/m14 无改动；verify_online.py 已加 M15 用例与 /m13/、/m14/ 逐字节比对
 - 2026-10-19 17:30 全量自测第 2 轮 587/587 全过；截图 m15_ch{2..6}_{4 机型}、m15_chapters_overview、m15_flat_before_after 已出
 - 2026-10-19 17:30 打包 /workspace/game-m15.zip（273 个文件、232MB，只带本轮 M15 截图，不含 __pycache__）
+- 2026-10-19 17:30 已用 publish.sh 发布（提交「M15 新画风 + 新界面套到第二～六章；M14 标已锁定」），等 Pages 构建后跑 verify_online.py
+- 2026-10-19 17:36 verify_online.py 147/147 通过（含 /m13/、/m14/ 逐字节未变、M15 十个章节×机型抽检）；md5sum -c 470 个全过；全部完成
+- 2026-10-19 17:45 锅显示宽度微调：data/art_override.js 加 dispScale（红汤大鼎 ×0.95、天下第一锅 ×0.88；锚点 340/869、374/846 与图片不动），game.js 绘制与点击判定同乘；擂台巨锅点击热区跟新锅图重标 x 680→744（原热区只有 69% 落在锅图内）；第 5–6 章四机型场景 114/114、主线 ch5→ch6 终幕 73s 0 报错、md5 470 全过；截图 screenshots/m15_pots_fix.png
+- 2026-10-19 17:45 重打 /workspace/game-m15.zip；接着 publish.sh 发布 + verify_online.py

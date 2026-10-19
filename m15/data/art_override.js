@@ -48,7 +48,8 @@ window.ART_OVERRIDE = {
    "w": 757,
    "h": 871,
    "ax": 340,
-   "ay": 869
+   "ay": 869,
+   "dispScale": 0.95
   }
  },
  "prop_giant_pot": {
@@ -61,7 +62,8 @@ window.ART_OVERRIDE = {
    "w": 758,
    "h": 847,
    "ax": 374,
-   "ay": 846
+   "ay": 846,
+   "dispScale": 0.88
   }
  }
 };
