@@ -105,3 +105,51 @@ body{color:var(--w-text);}
 
 /* 竖屏提示条也换成深墨金线 */
 #rotate-hint{background:var(--w-bg2); color:var(--w-gold-l); border-bottom:1px solid var(--w-gold); box-shadow:none;}
+
+/* ---------- 右侧「探索」栏（M13 继续改）：去掉红边浅底块，改成深墨细金线清单 ---------- */
+#explore.panel, #stage[class*="scene-"] #explore.panel{
+  background:linear-gradient(180deg,rgba(24,28,38,.86),rgba(24,28,38,.74)); color:var(--w-text);
+  border:0; border-top:1px solid var(--w-gold); border-bottom:1px solid var(--w-gold); border-radius:2px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35); padding:14px 20px 16px; width:460px; max-height:none; overflow:visible;
+}
+#explore .panel-title{background:none; color:var(--w-gold-l); border:0; border-radius:0; margin:0 0 6px; padding:2px 0 8px;
+  font-size:34px; font-weight:600; letter-spacing:18px; text-indent:18px; text-align:center;
+  background-image:linear-gradient(90deg,transparent,var(--w-gold) 30%,var(--w-gold) 70%,transparent); background-size:100% 1px; background-repeat:no-repeat; background-position:bottom;}
+#explore li, .m12-hud #explore li{
+  position:relative; background:none; border:0; border-left:0; border-radius:0; margin:0;
+  padding:14px 54px 14px 44px; min-height:76px; color:var(--w-text); font-size:30px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:52px; font-weight:400; letter-spacing:1px;
+  border-bottom:1px solid rgba(201,164,92,.18);
+}
+#explore li:last-child{border-bottom:0;}
+#explore li::before{content:""; position:absolute; left:12px; top:50%; width:14px; height:14px; margin-top:-8px;
+  transform:rotate(45deg); border:1px solid var(--w-gold); background:transparent;}
+#explore li:hover, #explore li:active{background:linear-gradient(90deg,rgba(201,164,92,.22),transparent);}
+/* 当前目标：金色实心菱 + 金字 + 左侧光带 */
+#explore li.target{color:var(--w-gold-l); font-weight:600; background:linear-gradient(90deg,rgba(201,164,92,.28),rgba(201,164,92,0) 85%);}
+#explore li.target::before{content:""; background:var(--w-gold-l); border-color:var(--w-gold-l); box-shadow:0 0 6px rgba(227,194,122,.8); font-size:0;}
+/* 走近了：右侧小「近」字章 */
+#explore li.near::after{content:"近"; position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  font-size:22px; font-weight:700; line-height:1; color:#1E1F26; background:var(--w-gold-l); padding:6px 7px; border-radius:2px;}
+
+.m12-hud #stage #explore{top:190px;}
+#explore .panel-foot, #explore .explore-hint, #explore ol{display:none;}
+#explore .hint{display:none !important;}
+/* 探索栏收紧：避开顶部地名与底部按钮 */
+.m12-hud #stage #explore{top:190px; max-height:510px; scrollbar-width:none;}
+.m12-hud #stage #explore::-webkit-scrollbar{display:none;}
+#explore li, .m12-hud #explore li{margin:0; min-height:0; padding:10px 54px 10px 44px; line-height:48px;}
+#explore .panel-title{margin-bottom:4px; padding-bottom:8px;}
+@media (orientation: portrait){ .m12-hud #stage #explore{top:280px; max-height:40vh;} }
+@media (orientation: portrait){ .m12-hud #stage #explore{top:570px;} }
+/* 路线选择 / 章节清单：A/B/C 圆章，保留可见 */
+.m12-hud #stage #explore{max-height:560px;}
+#explore li, .m12-hud #explore li{padding:6px 54px 6px 44px; line-height:44px;}
+#explore #routes{margin-top:8px; padding-top:8px; border-top:1px solid rgba(201,164,92,.45);}
+#explore #routes .ch-name{font-size:22px; color:var(--w-gold); letter-spacing:4px; margin-bottom:2px;}
+#explore #routes .route{display:flex; align-items:center; font-size:28px; line-height:42px; padding:0 4px; color:rgba(244,234,216,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#explore #routes .rk{flex:none; width:32px; height:32px; line-height:30px; font-size:20px; margin-right:10px; border:1.5px solid var(--w-gold); border-radius:50%; color:var(--w-gold-l); text-align:center; background:transparent;}
+#explore #routes .route.active{color:var(--w-gold-l); font-weight:600;}
+#explore #routes .route.active .rk{background:var(--w-gold); color:#1E1F26; box-shadow:0 0 8px rgba(227,194,122,.6);}
+#explore #routes .route.done{color:rgba(244,234,216,.45); text-decoration:line-through;}
+#explore #routes .cur, #explore #routes .done-seal{margin-left:8px; font-size:16px; line-height:1; padding:4px 6px; border-radius:2px; color:#1E1F26; background:var(--w-gold-l);}
+#explore #routes .done-seal{background:rgba(201,164,92,.35); color:var(--w-text);}
