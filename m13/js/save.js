@@ -7,7 +7,7 @@
     var s = ls();
     try {
       var raw = s ? s.getItem(KEY) : mem;
-      if (!raw && s) raw = s.getItem("jiaoma_jianghu_m12") || s.getItem("jiaoma_jianghu_m11") || s.getItem("jiaoma_jianghu_m10") || s.getItem("jiaoma_jianghu_m9") || s.getItem("jiaoma_jianghu_m8"); // M11：兼容读取 M10 / M9 / M8 存档（只读）
+      if (!raw && s) raw = s.getItem("jiaoma_jianghu_m12") || s.getItem("jiaoma_jianghu_m11") || s.getItem("jiaoma_jianghu_m10") || s.getItem("jiaoma_jianghu_m9") || s.getItem("jiaoma_jianghu_m8"); // M13：兼容读取 M12 / M11 / M10 / M9 / M8 存档（只读）
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }

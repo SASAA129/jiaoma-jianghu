@@ -140,8 +140,10 @@
       window.UI.blocking = function () { return ob() || !!panelKind; };
     }
     applyChrome();
+    setupFsChip();
     syncStageScale();
     window.addEventListener("resize", syncStageScale);
+    window.addEventListener("jm-resize", syncStageScale);
     setInterval(function () { tick(); syncStageScale(); }, 200); tick();
   }
 
@@ -215,11 +217,11 @@
       body = '<div class="hp-set">' +
         '<button class="hp-btn wide" data-set="hud">' + (prefs.hudCollapsed ? "展开 HUD" : "收起 HUD") + "</button>" +
         '<button class="hp-btn wide" data-set="btnsize">按钮：' + (prefs.btnLarge ? "更大" : "标准") + "（点此切换）</button>" +
-        '<button class="hp-btn wide" data-set="fs">全屏</button>' +
+        fsRow() +
         '<button class="hp-btn wide" data-set="rig">三人骨骼动画：' + (rig ? "开" : "关") + "</button>" +
         '<button class="hp-btn wide" data-set="title">回主菜单</button>' +
         '<button class="hp-btn wide danger" data-set="reset">重置存档</button>' +
-        '<p class="hp-note">摇杆 / 自动战斗 / 二倍速等仍待批准。场景平涂新图等用户锁定后再换。</p></div>';
+        '<p class="hp-note">摇杆 / 自动战斗 / 二倍速等仍待批准。</p></div>';
     } else return false;
     panel.innerHTML = '<div class="hp-box" role="dialog" aria-label="' + head.replace(/ /g, "") + '"><div class="hp-head"><span>' + head + '</span><button class="hp-close" data-close="1" aria-label="关闭">✕</button></div><div class="hp-body">' + body + "</div></div>";
     panel.dataset.kind = kind; panelKind = kind;
@@ -231,14 +233,37 @@
   }
   function closePanel() { panel.classList.add("hidden"); panelKind = null; }
 
-  function toggleFullscreen() {
-    var d = document;
-    if (!d.fullscreenElement && !d.webkitFullscreenElement) {
-      var el = d.documentElement;
-      (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);
-    } else {
-      (d.exitFullscreen || d.webkitExitFullscreen || function () {}).call(d);
+  // M13：全屏。安卓 / 桌面 / iPad：requestFullscreen（含 webkit 前缀），能锁就锁横屏；
+  // iPhone Safari 不支持网页元素全屏 → 设置里给「添加到主屏幕」提示（manifest display: fullscreen + apple-mobile-web-app-capable）。
+  function FS() { return (window.Fill && window.Fill.fs) || { supported: function () { return false; }, active: function () { return false; }, standalone: function () { return false; }, toggle: function () {}, isIOS: false, iosHint: "" }; }
+  function fsRow() {
+    var f = FS(), html = "";
+    if (f.supported()) html += '<button class="hp-btn wide" data-set="fs">' + (f.active() ? "退出全屏" : "全屏") + "</button>";
+    if (f.standalone()) html += '<p class="hp-fs-tip">已从主屏幕打开：无地址栏运行中。</p>';
+    else if (f.isIOS || !f.supported()) html += '<p class="hp-fs-tip" data-ios-tip="1">' + esc(f.iosHint) + "</p>";
+    return html;
+  }
+  function toggleFullscreen() { FS().toggle(); setTimeout(function () { if (panelKind === "shezhi") openPanel("shezhi"); }, 400); }
+  // 首次点击屏幕时给一个「全屏」提示钮（只在支持全屏、还没全屏、不是主屏幕打开时；每次打开页面一次；8 秒后自动收起）
+  function setupFsChip() {
+    var chip = document.createElement("div"); chip.id = "fs-chip"; chip.className = "hidden";
+    chip.innerHTML = '<button type="button" class="fs-go" aria-label="全屏">全屏</button><button type="button" class="fs-x" aria-label="不用">✕</button>';
+    document.body.appendChild(chip);
+    var shown = false, timer = 0;
+    function hide() { chip.classList.add("hidden"); clearTimeout(timer); }
+    chip.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    chip.querySelector(".fs-go").addEventListener("click", function (e) { e.stopPropagation(); hide(); FS().enter(); });
+    chip.querySelector(".fs-x").addEventListener("click", function (e) { e.stopPropagation(); hide(); });
+    function first() {
+      if (shown) return; shown = true;
+      window.removeEventListener("pointerdown", first, true);
+      var f = FS();
+      if (!f.supported() || f.active() || f.standalone()) return;
+      // 晚 400ms 再出现，不抢这次点击本身（例如关掉竖屏提示条）
+      setTimeout(function () { if (!FS().active()) { chip.classList.remove("hidden"); timer = setTimeout(hide, 8000); } }, 400);
     }
+    window.addEventListener("pointerdown", first, true);
+    window.FsChip = { el: chip, hide: hide, show: function () { shown = false; first(); } };
   }
 
   function onPanelClick(e) {

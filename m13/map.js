@@ -8,7 +8,7 @@ window.MAP = window.MAP_SHOP = {
   "version": 1,
   "id": "shop", "name": "皇族小满家·椒麻鸡火锅", "time": "戌时", "bg": "bg_room", "placeholder": "room",
   "world": { "w": 1536, "h": 1024 },
-  "signText": { "text": "椒麻鸡火锅", "x": 440, "y": 100, "skew": -0.231, "size": 64 },
+  "signText": { "text": "椒麻鸡火锅", "x": 440, "y": 103, "w": 422, "h": 214, "size": 64, "skew": 0 },
   "cols": 10,
   "rows": 12,
   "originX": 900,
@@ -44,7 +44,7 @@ window.MAP = window.MAP_SHOP = {
   "interactables": [
     { "id": "zhanggui", "name": "满掌柜", "kind": "npc", "cells": [[0, 5]] },
     { "id": "table", "name": "火锅桌", "kind": "prop", "cells": [[0,8],[0,9],[0,10],[1,10],[-1,8],[-1,9]], "hit": { "x": 30, "y": 390, "w": 360, "h": 215 } },
-    { "id": "sign", "name": "“椒麻鸡火锅”招牌", "kind": "sign", "cells": [[-1, 2], [-1, 3]], "hit": { "x": 232, "y": 20, "w": 420, "h": 190 } },
+    { "id": "sign", "name": "“椒麻鸡火锅”招牌", "kind": "sign", "cells": [[-1, 2], [-1, 3]], "hit": { "x": 229, "y": 0, "w": 422, "h": 210 } },
     { "id": "kitchen", "name": "后厨门帘", "kind": "hotspot", "cells": [[0, -1], [-1, -1]], "hit": { "x": 900, "y": 69, "w": 75, "h": 155 }, "label": "后厨",
       "sprite": { "name": "prop_kitchen_curtain", "x": 938, "y": 224, "h": 155 } },
     { "id": "door", "name": "店门（往老码头）", "kind": "exit", "to": "market", "entrance": "from_shop", "cells": [[7, 12], [8, 12]],

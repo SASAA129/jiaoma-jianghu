@@ -1,0 +1,19 @@
+{
+  "name": "椒麻江湖 · M13",
+  "short_name": "椒麻江湖",
+  "description": "皇族小满的椒麻江湖（M13 待验收：招牌修正 + 铺满屏幕）",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#EFE6D2",
+  "theme_color": "#6B4A33",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

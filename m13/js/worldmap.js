@@ -133,10 +133,6 @@
         });
       });
       c.restore();
-      // 标题框
-      c.save(); c.fillStyle = "rgba(255,248,236,.9)"; c.strokeStyle = "#b8402a"; c.lineWidth = 3;
-      c.fillRect(40, 36, 300, 74); c.strokeRect(40, 36, 300, 74);
-      c.fillStyle = "#7a2a18"; c.font = "bold 36px KaiTi, 'Noto Serif CJK SC', serif"; c.textBaseline = "middle"; c.fillText(W.title || "江湖地图", 62, 74); c.restore();
       return;
     }
     c.save(); c.setLineDash([14, 10]); c.lineWidth = 5; c.lineCap = "round";
@@ -148,11 +144,44 @@
     });
     c.restore();
   }
+  // M13：铺满屏幕。cover 视野，所有节点和名牌不裁；超出底图的方向补边缘延伸色；节点层跟着同一视野摆放
+  var lastFrame = "";
+  function wview() {
+    var cam = window.Game && window.Game.camera ? window.Game.camera() : { SW: 1536, SH: 1024 };
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    nodes().forEach(function (n) { var l = n.label || [0, 0]; x0 = Math.min(x0, n.x, n.x + l[0]); x1 = Math.max(x1, n.x, n.x + l[0]); y0 = Math.min(y0, n.y, n.y + l[1]); y1 = Math.max(y1, n.y, n.y + l[1]); });
+    if (x0 > x1) { x0 = 200; x1 = 1336; y0 = 150; y1 = 900; }
+    var safe = { x: Math.max(0, x0 - 130), y: Math.max(0, y0 - 90), w: 0, h: 0 };
+    safe.w = Math.min(1536, x1 + 130) - safe.x; safe.h = Math.min(1024, y1 + 110) - safe.y;
+    var v = window.Fill.view(cam.SW, cam.SH, 1536, 1024, { safe: safe, focus: { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 } });
+    v.SW = cam.SW; v.SH = cam.SH; return v;
+  }
   function render() {
     if (!open) return;
-    var c = cv.getContext("2d");
+    var main = document.getElementById("game");
+    if (cv.width !== main.width) cv.width = main.width;
+    if (cv.height !== main.height) cv.height = main.height;
+    var c = cv.getContext("2d"), v = wview(), kd = cv.width / v.w;
     if (!baseCanvas) baseCanvas = drawBase();
-    c.clearRect(0, 0, 1536, 1024); c.drawImage(baseCanvas, 0, 0); drawRoutes(c);
+    var bgs = window.Sprites && window.Sprites.get("bg_worldmap");
+    c.setTransform(kd, 0, 0, kd, -v.x * kd, -v.y * kd);
+    if (bgs) window.Fill.drawExtended(c, bgs.img, 1536, 1024, v, "#f1e2c4");
+    else { c.fillStyle = "#f1e2c4"; c.fillRect(v.x - 2, v.y - 2, v.w + 4, v.h + 4); c.drawImage(baseCanvas, 0, 0); }
+    drawRoutes(c);
+    // 节点层与底图同一视野（舞台逻辑 px）
+    var fr = [-v.x * v.k, -v.y * v.k, 1536 * v.k, 1024 * v.k].map(function (q) { return q.toFixed(1); }).join(",");
+    if (fr !== lastFrame) {
+      lastFrame = fr; var f = fr.split(","), ns = root.querySelector(".wm-nodes");
+      ns.style.left = f[0] + "px"; ns.style.top = f[1] + "px"; ns.style.width = f[2] + "px"; ns.style.height = f[3] + "px";
+    }
+    // 标题框画在屏幕空间，永远在左上角
+    if (bgs) {
+      var ks = cv.width / v.SW;
+      c.setTransform(ks, 0, 0, ks, 0, 0);
+      c.save(); c.fillStyle = "rgba(255,248,236,.9)"; c.strokeStyle = "#b8402a"; c.lineWidth = 3;
+      c.fillRect(40, 36, 300, 74); c.strokeRect(40, 36, 300, 74);
+      c.fillStyle = "#7a2a18"; c.font = "bold 36px KaiTi, 'Noto Serif CJK SC', serif"; c.textBaseline = "middle"; c.fillText(W.title || "江湖地图", 62, 74); c.restore();
+    }
     raf = requestAnimationFrame(render);
   }
   // ---------- DOM ----------
@@ -213,7 +242,7 @@
   window.WorldMap = { open: openMap, close: close, isOpen: function () { return open; }, travelTo: travelTo, markSeen: markSeen, routeLines: routeLines,
     state: function () {
       var cur = window.Game.scene();
-      return { open: open, art: !!(window.Sprites && window.Sprites.get("bg_worldmap")), artNodes: !!(ART && ART.nodes), current: cur, target: targetScene(), lock: lockReason(),
+      return { open: open, view: open ? wview() : null, art: !!(window.Sprites && window.Sprites.get("bg_worldmap")), artNodes: !!(ART && ART.nodes), current: cur, target: targetScene(), lock: lockReason(),
         nodes: nodes().map(function (n) { return { id: n.id, unlocked: unlocked(n), seen: !!flags()["map_seen_" + n.id] }; }) };
     } };
 })();

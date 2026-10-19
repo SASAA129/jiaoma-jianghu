@@ -7,6 +7,8 @@
   var WW = M.world.w, WH = M.world.h;
   var SPEED = 3;                 // 格/秒
   var stage, canvas, ctx, viewScale = 1, dpr = 1;
+  // M13：铺满屏幕。舞台 = 整个视口（逻辑宽 SW × 高 SH，按 contain 比例 viewScale 缩放）；相机视野 cam（世界坐标）按设备比例 cover，限制在地图内
+  var SW = 1536, SH = 1024, vpW = 0, vpH = 0, cam = { x: 0, y: 0, w: 1536, h: 1024, k: 1 }, camSnap = true, ZOOM_MAX = 2.0;
   var showGrid = false, time = 0, lastErr = 0;
   var blocked = {}, party = {}, chain = [], npcs = [], ripples = [], visSig = "";
   var menuTarget = null, toastTimer = null;
@@ -56,7 +58,7 @@
       ch.cell = { x: sp.x, y: sp.y }; ch.pos = { x: sp.x + .5, y: sp.y + .5 };
       ch.to = null; ch.from = null; ch.path = []; ch.onArrive = null; ch.t = 0; ch.back = false; ch.flip = false;
     });
-    ripples = [];
+    ripples = []; camSnap = true;
     stage.className = "scene-" + id;
     buildExplore(); refreshParty();
     var tb = document.querySelector("#topbar .loc"), tt = document.querySelector("#topbar .time");
@@ -207,9 +209,15 @@
     var el = document.getElementById("action-menu"), a = anchorOf(it);
     menuTarget = it;
     el.querySelector(".am-title").textContent = it.name;
-    el.style.left = Math.max(90, Math.min(WW - 90, a.x)) + "px";
-    el.style.top = Math.max(210, Math.min(WH - 20, a.y)) + "px";
+    placeMenu();
     el.classList.remove("hidden");
+  }
+  function worldToStage(x, y) { return { x: (x - cam.x) * cam.k, y: (y - cam.y) * cam.k }; }
+  function placeMenu() {
+    if (!menuTarget) return;
+    var el = document.getElementById("action-menu"), a = worldToStage(anchorOf(menuTarget).x, anchorOf(menuTarget).y);
+    el.style.left = Math.max(90, Math.min(SW - 90, a.x)) + "px";
+    el.style.top = Math.max(210, Math.min(SH - 20, a.y)) + "px";
   }
   function hideMenu() { menuTarget = null; document.getElementById("action-menu").classList.add("hidden"); }
   function uiBlocking() { return !!(window.UI && window.UI.blocking && window.UI.blocking()) || !!(window.Battle && window.Battle.isOpen()); }
@@ -339,10 +347,12 @@
     ctx.beginPath(); ctx.ellipse(f.x, f.y, M.tileW * .34, M.tileH * .34, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
   }
   function render(dt) {
-    ctx.setTransform(canvas.width / WW, 0, 0, canvas.height / WH, 0, 0);
-    ctx.clearRect(0, 0, WW, WH);
+    updateCamera(dt);
+    var kd = canvas.width / cam.w;
+    ctx.setTransform(kd, 0, 0, kd, -cam.x * kd, -cam.y * kd);
     var bg = S.get(M.bg || "bg_room");
-    if (bg) ctx.drawImage(bg.img, 0, 0, WW, WH);
+    window.Fill.drawExtended(ctx, bg && bg.img, WW, WH, cam, M.night ? "#2a2f3a" : "#efe6d2");
+    if (bg) {}
     else if (M.placeholder === "market") S.placeholderMarket(ctx, M, time);
     else if (M.placeholder === "river") S.placeholderRiver(ctx, M, time);
     else if (M.placeholder === "village") S.placeholderVillage(ctx, M, time);
@@ -363,13 +373,14 @@
     (window.Game.renderHooks || []).forEach(function (f) { f(ctx); });   // M2：剧情层绘制（目标标记、无图交互点）
     var near = nearestInteractable();
     if (near && !window.Dialog.isOpen() && !menuTarget && !uiBlocking()) drawBang(leader());
+    if (menuTarget) placeMenu();
     document.querySelectorAll("#explore li").forEach(function (li) { li.classList.toggle("near", !!near && li.dataset.id === near.id); });
   }
 
   // ---------------- 输入 ----------------
   function toWorld(e) {
     var r = canvas.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / r.width * WW, y: (e.clientY - r.top) / r.height * WH };
+    return { x: cam.x + (e.clientX - r.left) / r.width * cam.w, y: cam.y + (e.clientY - r.top) / r.height * cam.h };
   }
   function inRect(p, r) { return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; }
   function hitInteractable(p) {
@@ -480,13 +491,33 @@
     toastTimer = setTimeout(function () { el.classList.add("hidden"); }, 1600);
   }
   function resize() {
-    var vw = window.innerWidth, vh = window.innerHeight;
-    viewScale = Math.min(vw / WW, vh / WH);
+    var v = window.Fill.viewport(), vw = v.w, vh = v.h;
+    vpW = vw; vpH = vh;
+    viewScale = Math.min(vw / WW, vh / WH);          // 舞台内旧 UI 仍按 1536×1024 设计 → contain 比例
+    SW = vw / viewScale; SH = vh / viewScale;          // 舞台逻辑尺寸 ≥ 1536×1024，正好铺满视口
     dpr = Math.min(window.devicePixelRatio || 1, 3);
-    var l = (vw - WW * viewScale) / 2, t = (vh - WH * viewScale) / 2;
-    stage.style.transform = "translate(" + l + "px," + t + "px) scale(" + viewScale + ")";
-    canvas.width = Math.max(1, Math.round(WW * viewScale * dpr));
-    canvas.height = Math.max(1, Math.round(WH * viewScale * dpr));
+    stage.style.width = SW + "px"; stage.style.height = SH + "px";
+    stage.style.transform = "scale(" + viewScale + ")";
+    canvas.style.width = SW + "px"; canvas.style.height = SH + "px";
+    canvas.width = Math.max(1, Math.round(vw * dpr));
+    canvas.height = Math.max(1, Math.round(vh * dpr));
+    document.documentElement.style.setProperty("--vh", vh + "px");
+    camSnap = true; updateCamera(0);
+    try { window.dispatchEvent(new CustomEvent("jm-resize", { detail: { vw: vw, vh: vh, s: viewScale, SW: SW, SH: SH, dpr: dpr } })); } catch (e) {}
+  }
+  function checkResize() {
+    var v = window.Fill.viewport();
+    if (v.w !== vpW || v.h !== vpH || Math.min(window.devicePixelRatio || 1, 3) !== dpr) resize();
+  }
+  // 相机：cover 视野（最多放大到 contain 的 ZOOM_MAX 倍，竖屏不至于只看到一小块），跟随队长，限制在地图内
+  function updateCamera(dt) {
+    var L = chain.length && leader(), f = L ? G(L.pos.x, L.pos.y) : { x: WW / 2, y: WH / 2 };
+    var v = window.Fill.view(SW, SH, WW, WH, { focus: { x: f.x, y: f.y - 120 }, maxZoom: ZOOM_MAX });
+    if (camSnap || !dt) { cam.x = v.x; cam.y = v.y; camSnap = false; }
+    else { var a = Math.min(1, dt * 6); cam.x += (v.x - cam.x) * a; cam.y += (v.y - cam.y) * a; }
+    cam.w = v.w; cam.h = v.h; cam.k = v.k;
+    if (cam.w < WW) cam.x = Math.max(0, Math.min(WW - cam.w, cam.x));
+    if (cam.h < WH) cam.y = Math.max(0, Math.min(WH - cam.h, cam.y));
   }
 
   // ---------------- 主循环 ----------------
@@ -498,6 +529,7 @@
       var L0 = leader(), pk = sceneId + ":" + L0.cell.x + "," + L0.cell.y + ":" + chain[0];
       if (!moving(L0) && pk !== lastPosKey) { lastPosKey = pk; if (window.Dialog.persist) window.Dialog.persist(); }   // M4：停步即存档（场景 + 位置 + 队长）
       window.Dialog.update(dt);
+      checkResize();
       render(dt);
     } catch (err) {
       if (time - lastErr > 2) { lastErr = time; console.error(err); }
@@ -514,7 +546,9 @@
     buildExplore(); buildParty(); bindInput();
     resize();
     window.addEventListener("resize", resize);
-    window.addEventListener("orientationchange", resize);
+    window.addEventListener("orientationchange", function () { resize(); setTimeout(resize, 250); });
+    if (window.visualViewport) { window.visualViewport.addEventListener("resize", resize); window.visualViewport.addEventListener("scroll", resize); }
+    document.addEventListener("fullscreenchange", resize); document.addEventListener("webkitfullscreenchange", resize);
     S.onLoad(function () { refreshParty(); });
     if (window.Story) window.Story.init();
     lastPosKey = sceneId + ":" + leader().cell.x + "," + leader().cell.y + ":" + chain[0];
@@ -531,6 +565,10 @@
     leaderId: function () { return chain[0]; }, renderHooks: [], bgHooks: [],
     colorOf: function (id) { return C.list[id] && C.list[id].color; },
     cellCenter: function (x, y) { return G(x + .5, y + .5); },
+    // M13：铺满屏幕的相机 / 视口信息；worldToClient 把世界坐标换成页面 CSS 像素（测试用）
+    camera: function () { return { x: cam.x, y: cam.y, w: cam.w, h: cam.h, k: cam.k, SW: SW, SH: SH, scale: viewScale, vw: vpW, vh: vpH, dpr: dpr, cw: canvas.width, ch: canvas.height }; },
+    worldToClient: function (x, y) { var r = canvas.getBoundingClientRect(); return { x: r.left + (x - cam.x) / cam.w * r.width, y: r.top + (y - cam.y) / cam.h * r.height }; },
+    resize: resize,
     toggleGrid: function (v) { showGrid = v === undefined ? !showGrid : v; },
     state: function () {
       return {

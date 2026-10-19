@@ -38,7 +38,7 @@
     });
     canvas.addEventListener("pointerup", function (e) {
       if (!st || !st.picking) return;
-      var r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * WW, y = (e.clientY - r.top) / r.height * WH;
+      var r = canvas.getBoundingClientRect(), v = bview(), x = v.x + (e.clientX - r.left) / r.width * v.w, y = v.y + (e.clientY - r.top) / r.height * v.h;
       var u = unitAt(x, y); if (u) pickTarget(u); else cancelPick();
     });
     root.querySelector(".bt-cancel").addEventListener("click", function (e) { e.stopPropagation(); cancelPick(); });
@@ -284,7 +284,23 @@
   }
   function resize() {
     var main = document.getElementById("game");
-    canvas.width = main.width; canvas.height = main.height;
+    if (canvas.width !== main.width) canvas.width = main.width;
+    if (canvas.height !== main.height) canvas.height = main.height;
+  }
+  // M13：铺满屏幕。cover 视野，但所有单位（含头顶血条、脚下指令区）不裁；镜头限制在背景图内，超出的方向补边缘延伸色
+  function bview() {
+    var cam = window.Game && window.Game.camera ? window.Game.camera() : { SW: WW, SH: WH };
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    (st ? st.units : []).forEach(function (u) {
+      var r = unitRect(u);
+      x0 = Math.min(x0, r.x, u.x - 100); x1 = Math.max(x1, r.x + r.w, u.x + 100);
+      y0 = Math.min(y0, r.y - 80); y1 = Math.max(y1, u.y + 30);
+    });
+    if (x0 > x1) { x0 = 200; x1 = 1336; y0 = 150; y1 = 900; }
+    var safe = { x: x0 - 60, y: y0 - 40, w: (x1 - x0) + 120 + 240, h: (y1 - y0) + 40 + 190 };   // 右侧留状态栏、底部留指令圆钮
+    safe.x = Math.max(0, safe.x); safe.y = Math.max(0, safe.y);
+    return window.Fill ? window.Fill.view(cam.SW, cam.SH, WW, WH, { safe: safe, focus: { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 } })
+      : { k: 1, x: 0, y: 0, w: WW, h: WH };
   }
 
   // ---------- 绘制 ----------
@@ -336,27 +352,31 @@
     if (!st) { last = 0; return; }
     var dt = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts; st.t += dt;
     try {
-      ctx.setTransform(canvas.width / WW, 0, 0, canvas.height / WH, 0, 0);
+      resize();
+      var V = bview(), kd = canvas.width / V.w;
+      st.view = V;
+      ctx.setTransform(kd, 0, 0, kd, -V.x * kd, -V.y * kd);
+      ctx.fillStyle = "#e3d6bb"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4);
       // 背景：有 bg_battle 用它（只加很轻的暗角）；没有则退回压淡的店内背景；再没有就纯色
       // M4：战斗配置可指定 bg（如夜市 bg_market），缺图时用 bgFallback 的代码占位
       var bgb, bg;
       if (st.cfg.bg) {
         bgb = S.get(st.cfg.bg);
-        if (bgb) ctx.drawImage(bgb.img, 0, 0, WW, WH);
+        if (bgb) window.Fill.drawExtended(ctx, bgb.img, WW, WH, V);
         else if (st.cfg.bgFallback === "market" && window.MAP_MARKET) { S.placeholderMarket(ctx, window.MAP_MARKET, st.t); bgb = true; }
         else if (st.cfg.bgFallback === "river" && window.MAP_RIVER) { S.placeholderRiver(ctx, window.MAP_RIVER, st.t); bgb = true; }
         else if (st.cfg.bgFallback === "village" && window.MAP_VILLAGE) { S.placeholderVillage(ctx, window.MAP_VILLAGE, st.t); bgb = true; }
         else if (st.cfg.bgFallback === "hq" && window.MAP_HQ) { S.placeholderHq(ctx, window.MAP_HQ, st.t); bgb = true; }
         else if (st.cfg.bgFallback === "arena" && window.MAP_ARENA) { S.placeholderArena(ctx, window.MAP_ARENA, st.t); bgb = true; }
-        if (bgb) { ctx.fillStyle = "rgba(20,24,40,.18)"; ctx.fillRect(0, 0, WW, WH); }
+        if (bgb) { ctx.fillStyle = "rgba(20,24,40,.18)"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4); }
       } else {
         bgb = S.get("bg_battle"); bg = bgb || S.get("bg_room");
-        if (bg) ctx.drawImage(bg.img, 0, 0, WW, WH); else { ctx.fillStyle = "#e3d6bb"; ctx.fillRect(0, 0, WW, WH); }
+        if (bg) window.Fill.drawExtended(ctx, bg.img, WW, WH, V); else { ctx.fillStyle = "#e3d6bb"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4); }
         drawCurtain();     // bg_battle 与 bg_room 构图逐像素对齐，门帘用地图里同一套坐标
       }
-      if (!bgb) { ctx.fillStyle = "rgba(243,234,214,.55)"; ctx.fillRect(0, 0, WW, WH); }
+      if (!bgb) { ctx.fillStyle = "rgba(243,234,214,.55)"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4); }
       var g = ctx.createRadialGradient(WW / 2, WH * .62, 260, WW / 2, WH * .62, 950);
-      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, bgb ? "rgba(30,20,10,.28)" : "rgba(30,20,10,.55)"); ctx.fillStyle = g; ctx.fillRect(0, 0, WW, WH);
+      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, bgb ? "rgba(30,20,10,.28)" : "rgba(30,20,10,.55)"); ctx.fillStyle = g; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4);
       ctx.strokeStyle = bgb ? "rgba(43,38,34,.22)" : "rgba(43,38,34,.35)"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.ellipse(WW / 2 + 60, 740, 620, 190, 0, 0, Math.PI * 2); ctx.stroke();
       st.units.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (u) { drawUnit(u, dt); });
@@ -392,6 +412,7 @@
         order: st.order.map(function (u) { return u.id; }), items: JSON.parse(JSON.stringify(st.items)), log: st.log.slice(),
         floats: st.floats.map(function (f) { return f.text; }), floatIcons: st.floats.filter(function (f) { return f.icon; }).map(function (f) { return f.icon; }),
         fx: st.fx.map(function (f) { return f.name; }), fxCount: JSON.parse(JSON.stringify(st.fxCount)), bg: st.cfg.bg ? (S.get(st.cfg.bg) ? st.cfg.bg : (st.cfg.bgFallback || "none")) : (S.get("bg_battle") ? "bg_battle" : (S.get("bg_room") ? "bg_room" : "none")), id: st.id,
+        view: st.view ? { x: st.view.x, y: st.view.y, w: st.view.w, h: st.view.h, k: st.view.k } : null,
         units: st.units.map(function (u) { return { id: u.id, name: u.name, side: u.side, hp: u.hp, hpMax: u.hpMax, mp: u.mp, mpMax: u.mpMax, spd: u.spd, defending: u.defending, x: u.x, y: u.y, h: unitHeight(u), sprite: !!(u.sprite && S.get(u.sprite)) }; }) };
     },
     // 测试用：直接对某单位造成伤害

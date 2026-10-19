@@ -202,16 +202,43 @@
     });
   }
   // M13：平涂底图的招牌是空白木匾 → 程序写上「椒麻鸡火锅」（顺着匾面斜度）
+  // M13：底图上的空白木匾是斜透视的；在它上面叠一块端正的平涂牌匾（武侠夜色：深木框金边 + 深墨底 + 内金线 + 金字），五个字水平居中写正。
+  // 全部在世界坐标里画，跟着相机缩放走；canvas 按 devicePixelRatio 出图，字不糊。
+  var SIGN_FONT = "'PingFang SC','HarmonyOS Sans SC','MiSans','Noto Sans SC','Noto Sans CJK SC','Source Han Sans SC','Microsoft YaHei',sans-serif";
+  function rrect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  function signBox() {
+    var s = window.Game.map().signText; if (!s) return null;
+    var w = s.w || 422, h = s.h || 214;
+    return { x: s.x - w / 2, y: s.y - h / 2, w: w, h: h, cx: s.x, cy: s.y, size: s.size || 56, text: s.text };
+  }
   function drawShopSign(ctx) {
     if (window.Game.scene() !== "shop" || !window.Sprites.get("bg_room")) return;
-    var m = window.Game.map(); if (!m.signText) return;
-    var s = m.signText;
+    var b = signBox(); if (!b) return;
     ctx.save();
-    ctx.setTransform(ctx.getTransform().multiply(new DOMMatrix([1, s.skew, 0, 1, s.x, s.y])));
-    ctx.font = "bold " + s.size + "px 'Noto Serif CJK SC', 'Songti SC', serif";
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillText(s.text, 3, 4);
-    ctx.fillStyle = "#E8B04A"; ctx.fillText(s.text, 0, 0);
+    // 武侠夜色：深木外框 + 金边，深墨底 + 内金线
+    ctx.fillStyle = "rgba(0,0,0,.35)"; rrect(ctx, b.x + 3, b.y + 7, b.w, b.h, 10); ctx.fill();
+    ctx.fillStyle = "#2B2119"; rrect(ctx, b.x, b.y, b.w, b.h, 10); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = "#C9A45C"; ctx.stroke();
+    var m = 13; ctx.fillStyle = "#1A1E2A"; rrect(ctx, b.x + m, b.y + m, b.w - 2 * m, b.h - 2 * m, 6); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "#8E6D31"; ctx.stroke();
+    var g = m + 8; ctx.strokeStyle = "#E3C27A"; ctx.lineWidth = 2; rrect(ctx, b.x + g, b.y + g, b.w - 2 * g, b.h - 2 * g, 4); ctx.stroke();
+    // 四角金色小菱
+    ctx.fillStyle = "#E3C27A";
+    [[b.x + g, b.y + g], [b.x + b.w - g, b.y + g], [b.x + g, b.y + b.h - g], [b.x + b.w - g, b.y + b.h - g]].forEach(function (p) {
+      ctx.beginPath(); ctx.moveTo(p[0], p[1] - 7); ctx.lineTo(p[0] + 7, p[1]); ctx.lineTo(p[0], p[1] + 7); ctx.lineTo(p[0] - 7, p[1]); ctx.closePath(); ctx.fill();
+    });
+    // 五个字：逐字等距排开、水平居中、竖直居中、不倾斜
+    var chars = Array.from(b.text), fs = b.size, gap = Math.round(fs * 0.12), total = chars.length * fs + (chars.length - 1) * gap;
+    ctx.font = "900 " + fs + "px " + SIGN_FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    chars.forEach(function (ch, i) {
+      var x = b.cx - total / 2 + fs / 2 + i * (fs + gap);
+      ctx.fillStyle = "#0E1016"; ctx.fillText(ch, x, b.cy + 3);      // 暗投影
+      ctx.fillStyle = "#E8C77E"; ctx.fillText(ch, x, b.cy);           // 金字
+    });
     ctx.restore();
   }
   function drawHooks(ctx) {
@@ -323,6 +350,7 @@
     window.Game.renderHooks.push(drawHooks);
     window.Game.bgHooks.push(drawWallSprites);
     window.Game.bgHooks.push(drawShopSign);
+    window.Game.signBox = signBox;
     window.Dialog.onClose(function () { refresh(); setTimeout(drain, 0); });
     // 读档：恢复场景、位置、队长
     var sv = window.Save.load(), meta = sv && sv.meta, q = location.search;
