@@ -208,6 +208,13 @@
       var o = window.Story ? window.Story.objective() : { text: "" };
       body = '<div class="hp-sec"><h3>当前目标</h3><p class="hp-goal">' + esc(o.text) + "</p>" + (o.via ? '<p class="hp-via">→ 先去「' + esc(o.via) + "」</p>" : "") +
         (o.checklist ? '<div class="hp-list">' + o.checklist.map(function (c) { return '<div class="hp-row' + (c.done ? " done" : "") + '"><b>' + (c.done ? "✔ " : "· ") + esc(c.text) + "</b></div>"; }).join("") + "</div>" : "") + "</div>";
+      // M13：路线（原右侧探索栏里的 A/B/C / 各章清单）收进任务面板；行高 48、字 15
+      var ri = window.Story && window.Story.routeInfo ? window.Story.routeInfo() : null;
+      if (ri) body += '<div class="hp-sec hp-routes"><h3>路线</h3><p class="hp-rt-title">' + esc(ri.title) + "</p>" + ri.rows.map(function (r) {
+        return '<button type="button" class="hp-route ' + r.state + '" data-route="' + esc(r.key) + '" data-rkind="' + ri.kind + '"' + (r.target ? ' data-target="' + esc(r.target) + '"' : "") + '>' +
+          '<span class="rk">' + esc(r.rk) + '</span><span class="rt">' + esc(r.text) + "</span>" +
+          (r.state === "done" ? '<span class="done-seal">已完</span>' : r.state === "active" ? '<span class="cur">进行中</span>' : (ri.kind === "routes" ? '<span class="go">选这条 ›</span>' : "")) + "</button>";
+      }).join("") + "</div>";
       var clues = (CH.clues || []).filter(cond);
       body += '<div class="hp-sec"><h3>线索</h3>' + (clues.length ? clues.map(function (c) { return "<p>" + esc(c.text) + "</p>"; }).join("") : '<p class="hp-empty">还没有线索。</p>') + "</div>";
     } else if (kind === "caipu") {
@@ -273,6 +280,11 @@
       closePanel(); return;
     }
     var b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.route) {
+      if (b.dataset.rkind === "routes") window.Story.pickRoute(b.dataset.route);
+      else if (!b.classList.contains("done")) window.Story.goRow(b.dataset.target);
+      return;
+    }
     if (b.dataset.lead) { window.Game.setLeader(b.dataset.lead); openPanel("huoban"); return; }
     var s = b.dataset.set;
     if (s === "hud") { prefs.hudCollapsed = !prefs.hudCollapsed; savePrefs(); applyChrome(); openPanel("shezhi"); }

@@ -30,10 +30,31 @@
     return out;
   }
   // 在世界坐标里画底图 (0,0,W,H)，并把视野 v（世界坐标矩形）里超出底图的部分用边缘延伸色补满
-  function drawExtended(ctx, img, W, H, v, fallback) {
+  // M13：floor = { base, line, phase, tileH, slope }：超出底图的下 / 左 / 右边按等距地板规律（2:1 斜缝、竖向间距 tileH）续铺平涂地板，不再填纯色
+  var floorPat = null, floorKey = "";
+  function floorPattern(ctx, fl) {
+    var k = JSON.stringify(fl); if (floorPat && floorKey === k) return floorPat;
+    var th = fl.tileH || 62, tw = th / (fl.slope || 0.5), cv = document.createElement("canvas"); cv.width = Math.round(tw); cv.height = Math.round(th);
+    var x = cv.getContext("2d"), rgb = function (c) { return "rgb(" + c.map(Math.round).join(",") + ")"; };
+    x.fillStyle = rgb(fl.base); x.fillRect(0, 0, cv.width, cv.height);
+    x.strokeStyle = rgb(fl.line); x.lineWidth = 1.6;
+    var c = (fl.phase || 0) % th;
+    [-th, 0, th].forEach(function (o) { x.beginPath(); x.moveTo(0, c + o); x.lineTo(cv.width, c + o + cv.height); x.stroke(); });
+    floorPat = ctx.createPattern(cv, "repeat"); floorKey = k; return floorPat;
+  }
+  function drawExtended(ctx, img, W, H, v, fallback, floor) {
     ctx.fillStyle = fallback || "#efe6d2";
     ctx.fillRect(v.x - 2, v.y - 2, v.w + 4, v.h + 4);
     if (!img) return;
+    if (floor) {
+      ctx.save(); ctx.fillStyle = floorPattern(ctx, floor);
+      ctx.fillRect(v.x - 2, Math.max(v.y - 2, H * 0.4), v.w + 4, v.h + 4);   // 上半是墙：仍走下面的边缘延伸；下半起铺地板
+      ctx.restore();
+      var y0f = v.y - 2;
+      if (y0f < 0) { var E0 = edgeColors(img); ctx.fillStyle = E0.top; ctx.fillRect(v.x - 2, y0f, v.w + 4, -y0f); }
+      ctx.drawImage(img, 0, 0, W, H);
+      return;
+    }
     var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, kx = iw / W, ky = ih / H, E = edgeColors(img), s = 3;
     var x0 = v.x - 2, y0 = v.y - 2, x1 = v.x + v.w + 2, y1 = v.y + v.h + 2;
     function strip(sx, sy, sw, sh, dx, dy, dw, dh) { if (dw > 0 && dh > 0) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }

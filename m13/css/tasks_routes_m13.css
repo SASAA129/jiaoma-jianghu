@@ -1,0 +1,16 @@
+/* M13：「任务」面板里的「路线」一节（原右侧探索栏的 A/B/C / 各章清单）。屏幕层 CSS px：行高 48、字 15。配色沿用武侠夜色变量。 */
+#hud-panel .hp-routes .hp-rt-title { margin: 0 0 4px; font-size: 14px; color: var(--w-gold-l, #E3C27A); letter-spacing: 1px; }
+#hud-panel .hp-route { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; box-sizing: border-box; margin: 0; padding: 0 10px;
+  font: 500 15px/1.3 inherit; font-size: 15px; color: var(--w-text, #F4EAD8); text-align: left; cursor: pointer;
+  background: transparent; border: 0; border-bottom: 1px solid rgba(201,164,92,.22); border-radius: 0; -webkit-tap-highlight-color: transparent; }
+#hud-panel .hp-route:active { background: linear-gradient(90deg, rgba(201,164,92,.22), transparent); }
+#hud-panel .hp-route .rk { flex: none; width: 26px; height: 26px; line-height: 24px; text-align: center; border-radius: 50%; box-sizing: border-box;
+  border: 1.5px solid #C9A45C; color: #E3C27A; font-size: 14px; font-weight: 700; }
+#hud-panel .hp-route .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#hud-panel .hp-route .go { flex: none; font-size: 14px; color: #C9A45C; }
+#hud-panel .hp-route .cur { flex: none; font-size: 13px; padding: 2px 6px; color: #1E1F26; background: linear-gradient(#E3C27A, #C9A45C); border-radius: 2px; }
+#hud-panel .hp-route .done-seal { flex: none; font-size: 13px; padding: 1px 5px; color: #E3C27A; border: 1px solid rgba(227,194,122,.6); border-radius: 2px; }
+#hud-panel .hp-route.active { color: #E3C27A; font-weight: 600; background: linear-gradient(90deg, rgba(201,164,92,.18), transparent 85%); }
+#hud-panel .hp-route.active .rk { background: #E3C27A; color: #1E1F26; }
+#hud-panel .hp-route.done { color: rgba(244,234,216,.5); }
+#hud-panel .hp-route.done .rt { text-decoration: line-through; text-decoration-color: rgba(201,164,92,.6); }

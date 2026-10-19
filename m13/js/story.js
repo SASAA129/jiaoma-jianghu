@@ -191,6 +191,63 @@
     document.querySelectorAll("#explore li").forEach(function (li) { li.classList.toggle("target", li.dataset.id === o.target); });
   }
 
+  // ---------- M13：「任务」面板里的「路线」一节（取代右侧探索栏里的 A/B/C） ----------
+  // 第一章：A/B/C 三条线；之后各章：本章清单。行数据给 hud.js 渲染。
+  function routeInfo() {
+    var f = flags();
+    var chk = function (ch, CHX) {
+      var st = (CHX.stages || []).filter(function (s) { return s.checklist; })[0] || { checklist: [] };
+      return { kind: "checklist", title: "第" + "一二三四五六"[ch] + "章 · " + (CHX.name || ""), rows: st.checklist.map(function (c, i) {
+        return { key: c.flag, rk: String(i + 1), text: c.text, state: f[c.flag] ? "done" : "", target: c.target || null };
+      }) };
+    };
+    if (f.c5_finale) return { kind: "checklist", title: "第六章 · " + (CH6.name || ""), rows: [{ key: "c6", rk: "★", text: "三轮比赛 · 决战 · 回店交接", state: f.c6_finale ? "done" : "", target: null }] };
+    if (f.c4_finale) return chk(5, CH5);
+    if (f.c3_finale) return chk(4, CH4);
+    if (f.c2_finale) return chk(3, CH3);
+    if (f.ch1_done) return chk(2, CH2);
+    return { kind: "routes", title: "第一章 · 三条线（选线找满掌柜）", rows: Object.keys(ROUTES).map(function (r) {
+      var R = ROUTES[r];
+      return { key: r, rk: r, text: R.heroName + "线·" + (R.short || R.name), state: f["end_" + r] ? "done" : (f["route_" + r] ? "active" : ""), target: "zhanggui" };
+    }) };
+  }
+  // 点路线 = 走到满掌柜身边，开他的选线对白，并替玩家点下同一个选项（Dialog.choose，与手点选项完全一样：route 指令 + 切队长 + 接后续对白）
+  var autoRoute = null;
+  function routeOptionIndex(r) {
+    var n = D.nodes.zg_choose; if (!n) return -1;
+    var list = (n.options || []).filter(function (o) { return cond(o); });
+    for (var i = 0; i < list.length; i++) if ((list[i].do || []).some(function (d) { return d.route === r; })) return i;
+    return -1;
+  }
+  function pickRoute(r) {
+    var f = flags();
+    if (f.ch1_done || !ROUTES[r]) return "closed";
+    if (f["route_" + r]) { window.Game.toast("这条线正在查"); return "active"; }
+    if (window.Hud && window.Hud.close) window.Hud.close();
+    if (!window.Game.interactable("zhanggui")) { window.Game.toast("回火锅店找满掌柜选线"); return "away"; }
+    autoRoute = { r: r, t: Date.now() };
+    window.Game.goInteract("zhanggui", function () {
+      if (flags().heard_jinnang) window.Dialog.open("zg_choose");
+      else window.Dialog.startEntry("zhanggui", "talk");     // 还没听掌柜说锦囊：先播开场，到选线那句时再替你选
+    });
+    return "go";
+  }
+  function goRow(target) {
+    if (window.Hud && window.Hud.close) window.Hud.close();
+    var it = target && window.Game.interactable(target);
+    if (it) { window.Game.goInteract(target); return "go"; }
+    window.Game.toast("不在这里——看「当前目标」"); return "away";
+  }
+  setInterval(function () {
+    if (!autoRoute) return;
+    if (window.Dialog.isOpen()) autoRoute.seen = true;                     // 开场对白可能读很久：对话开着就一直等
+    else if (autoRoute.seen || Date.now() - autoRoute.t > 45000) { autoRoute = null; return; }   // 对白关了还没到选线 / 走了 45 秒没到 → 作废
+    if (window.Dialog.current() === "zg_choose") {
+      var i = routeOptionIndex(autoRoute.r); autoRoute = null;
+      window.Dialog.finish(); if (i >= 0) window.Dialog.choose(i);
+    }
+  }, 80);
+
   // ---------- 地图上的标记 ----------
   // 贴墙的交互点贴图（如后厨门帘）：sprite.x/y = 门槛处底边中点（世界坐标），sprite.h = 显示高度，按高度等比缩放。
   function hasSprite(it) { return it.sprite && window.Sprites.get(it.sprite.name); }
@@ -252,7 +309,7 @@
       ctx.fillStyle = it.kind === "exit" ? "#f3e7c9" : "#2b2622"; ctx.fillText(label, x, y + 1);
       ctx.restore();
     });
-    if (o.target && !window.Dialog.isOpen()) {
+    if (o.target && !window.Dialog.isOpen() && !window.Markers) {   // M13：目标改由头顶名牌（js/markers.js）表示
       var it = window.Game.interactable(o.target); if (!it) return;
       var a = window.Game.anchorOf(it), yy = a.y - 26 + Math.sin(t * 4) * 6;
       if (it.hit) yy = it.hit.y + 6 + Math.sin(t * 4) * 6;
@@ -390,7 +447,7 @@
       }, 400);
     }
   }
-  window.Story = { init: init, run: run, objective: objective, activeRoute: activeRoute, showCard: showCard,
+  window.Story = { init: init, run: run, objective: objective, routeInfo: routeInfo, pickRoute: pickRoute, goRow: goRow, activeRoute: activeRoute, showCard: showCard,
     isCardOpen: function () { return cardOpen; }, refresh: refresh, startBattle: startBattle, useExit: useExit, travel: travel,
     pending: function () { return pending.slice(); }, drain: drain };
 })();

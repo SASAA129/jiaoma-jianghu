@@ -9,6 +9,8 @@
   var stage, canvas, ctx, viewScale = 1, dpr = 1;
   // M13：铺满屏幕。舞台 = 整个视口（逻辑宽 SW × 高 SH，按 contain 比例 viewScale 缩放）；相机视野 cam（世界坐标）按设备比例 cover，限制在地图内
   var SW = 1536, SH = 1024, vpW = 0, vpH = 0, cam = { x: 0, y: 0, w: 1536, h: 1024, k: 1 }, camSnap = true, ZOOM_MAX = 2.0;
+  // M13 铺满细化：场景相机改成完全 cover（竖屏也铺到底、不再露出底图外的米色填充）；window.CAM_MAX_ZOOM 可临时改回上限
+  var CAM_COVER = true;
   var showGrid = false, time = 0, lastErr = 0;
   var blocked = {}, party = {}, chain = [], npcs = [], ripples = [], visSig = "";
   var menuTarget = null, toastTimer = null;
@@ -182,17 +184,19 @@
     var p = G(sx / it.cells.length, sy / it.cells.length);
     return { x: p.x, y: p.y - M.tileH * 1.6 };
   }
-  function goInteract(id) {
+  // M13：onArrive 可选——到了以后改调它（任务面板「路线」走到满掌柜后直接开对白）；不给就照旧弹动作菜单
+  function goInteract(id, onArrive) {
     var it = interactable(id); if (!it) return;
     hideMenu();
     var L = leader(), s = L.to || L.cell, cells = approachCells(it), best = null;
-    if (!L.to && cells.some(function (c) { return c.x === s.x && c.y === s.y; })) { arriveAt(it); return; }
+    var done = function () { if (onArrive && it.kind !== "exit") onArrive(it); else arriveAt(it); };
+    if (!L.to && cells.some(function (c) { return c.x === s.x && c.y === s.y; })) { done(); return; }
     cells.forEach(function (c) {
       var p = PF.astar(walkable, M.cols, M.rows, s.x, s.y, c.x, c.y);
       if (p && (!best || pathCost(p, s) < pathCost(best, s))) best = p;
     });
     if (!best) { toast("走不过去"); return; }
-    L.path = best; L.onArrive = function () { arriveAt(it); };
+    L.path = best; L.onArrive = done;
   }
   function pathCost(p, s) {
     var c = 0, prev = s;
@@ -350,8 +354,8 @@
     updateCamera(dt);
     var kd = canvas.width / cam.w;
     ctx.setTransform(kd, 0, 0, kd, -cam.x * kd, -cam.y * kd);
-    var bg = S.get(M.bg || "bg_room");
-    window.Fill.drawExtended(ctx, bg && bg.img, WW, WH, cam, M.night ? "#2a2f3a" : "#efe6d2");
+    var bg = (M.bgExt && S.get(M.bgExt)) || S.get(M.bg || "bg_room");     // M13：火锅店用底部两角续铺了地板的 bg_room_ext（运行时生成物，不动锁定底图）
+    window.Fill.drawExtended(ctx, bg && bg.img, WW, WH, cam, M.night ? "#2a2f3a" : "#efe6d2", M.floorExt || null);
     if (bg) {}
     else if (M.placeholder === "market") S.placeholderMarket(ctx, M, time);
     else if (M.placeholder === "river") S.placeholderRiver(ctx, M, time);
@@ -512,7 +516,7 @@
   // 相机：cover 视野（最多放大到 contain 的 ZOOM_MAX 倍，竖屏不至于只看到一小块），跟随队长，限制在地图内
   function updateCamera(dt) {
     var L = chain.length && leader(), f = L ? G(L.pos.x, L.pos.y) : { x: WW / 2, y: WH / 2 };
-    var v = window.Fill.view(SW, SH, WW, WH, { focus: { x: f.x, y: f.y - 120 }, maxZoom: ZOOM_MAX });
+    var v = window.Fill.view(SW, SH, WW, WH, { focus: { x: f.x, y: f.y - 120 }, maxZoom: CAM_COVER ? (window.CAM_MAX_ZOOM || 0) : ZOOM_MAX });
     if (camSnap || !dt) { cam.x = v.x; cam.y = v.y; camSnap = false; }
     else { var a = Math.min(1, dt * 6); cam.x += (v.x - cam.x) * a; cam.y += (v.y - cam.y) * a; }
     cam.w = v.w; cam.h = v.h; cam.k = v.k;
@@ -562,6 +566,11 @@
     saveMeta: function () { if (!chain.length) return null; return { scene: sceneId, leader: chain[0], cells: chain.map(function (id) { return { x: party[id].cell.x, y: party[id].cell.y }; }) }; },
     toast: toast, setLeader: setLeader, goInteract: goInteract, clickWorld: clickWorld, nearestInteractable: nearestInteractable, arriveAt: arriveAt, doAction: doAction,
     walkable: walkable, anchorOf: anchorOf, interactable: interactable, hideMenu: hideMenu,
+    menuOpen: function () { return !!menuTarget; }, uiBlocking: uiBlocking,
+    npcRect: function (id) { var n = npcs.filter(function (q) { return q.id === id; })[0]; return n ? spriteRect(n) : null; },
+    npcIds: function () { return npcs.map(function (n) { return n.id; }); },
+    clientToWorld: function (cx, cy) { var r = canvas.getBoundingClientRect(); return { x: cam.x + (cx - r.left) / r.width * cam.w, y: cam.y + (cy - r.top) / r.height * cam.h }; },
+    leaderCell: function () { var L = leader(); return L ? { x: L.cell.x, y: L.cell.y } : null; },
     leaderId: function () { return chain[0]; }, renderHooks: [], bgHooks: [],
     colorOf: function (id) { return C.list[id] && C.list[id].color; },
     cellCenter: function (x, y) { return G(x + .5, y + .5); },

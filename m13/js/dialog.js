@@ -123,6 +123,8 @@
   window.Dialog = {
     init: init, startEntry: startEntry, open: open, update: update, key: key, close: close,
     isOpen: function () { return !!state; }, flags: flags, persist: persist,
-    onClose: function (f) { closeListeners.push(f); }, current: function () { return state && state.id; }
+    onClose: function (f) { closeListeners.push(f); }, current: function () { return state && state.id; },
+    // M13：任务面板「路线」用——与点对白选项走同一个 choose()
+    finish: finishTyping, choose: choose, typing: function () { return !!(state && state.typing); }
   };
 })();

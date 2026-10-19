@@ -30,3 +30,21 @@
   - 横屏：贴右侧，宽 210px，夹在地名/地图钮与底部菜单之间，超出可上下滑动（路线在条目下方，滑到底可见）。
   - 竖屏：改成底部菜单上方的横向可滑卡片条（两行：探索条目 / A·B·C 路线），不再压在满掌柜头顶；走近 NPC 出现「交谈」大钮时让位。
   - 对话框、面板打开时整栏让位，不压对话框。
+
+## 探索改头顶名牌（2026-10-19 下午，用户：「右侧探索栏不喜欢」→「做出来我先看看」）
+- 去掉右侧探索栏 / 竖屏底部卡片条：`css/markers_m13.css` 把 `#explore` 整个 `display:none`（DOM 留着，旧逻辑不报错）；index.html 不再引用 `css/explore_fix.css`（文件留档未删）。`css/ui_wuxia.css` 未改。
+- 头顶名牌：样式 = 游戏设计 Bot 的 `art/ui_wuxia/marker/markers.css`，原样复制为 `css/markers.css`（md5 一致，自测校验）；结构按同目录 README：
+  `<div class="wx-mk npc|prop [target] [near] [edge-*]"><div class="tag">名字</div><div class="gem"></div></div>`，挂在 body 的 `#wx-markers` 层（z 39，在 HUD 之下）。
+  - `js/markers.js`：每帧用 `Game.worldToClient`（含舞台缩放 / cover 相机 / dpr）把世界坐标换成屏幕 CSS px 定位。锚点：有 hit 取 hit 顶边中点，人物取头顶（`anchorOf`）。
+  - 状态：人物 `.npc`、物件 `.prop`、当前目标 `.target`（金底名牌 + 红「！」圆章 + 浮动）、队长 ≤3 格 `.near`；目标在屏外 → 沿「屏幕中心→目标」贴边 `.edge-left/right/up/down` 带箭头，点它也走过去；其他屏外物件不显示；最多 6 块（目标优先）。
+  - 店门（exit）不挂牌（底图已有出口牌），点店门照旧能走；出口是目标且在屏外时仍贴边指路。
+  - 避让：不压 HUD（头像卡 / 当前目标 / 地名地图 / 底部菜单 / 交谈钮 / 全屏钮），不压 NPC 身体，名牌之间互不重叠；头顶被 HUD 顶下来时改挂身侧；非目标牌子挤开超过 140px 就不挂（本体照样可点）。
+  - 走到旁边（出现「交谈」大钮）、对话 / 动作菜单 / 面板 / 战斗 / 地图打开时整层隐藏。
+  - 点名牌 = `Game.goInteract`（A* 走过去 + 原交互菜单）；点人物 / 物件本身仍有效（game.js 原命中逻辑不变）。
+  - 行为参数集中在 `Markers.config`（maxShown、minHit、nearCells、edgeMargin、hudPad、maxShift、lift、avoid…），外观全在 markers.css，按设计规格替换只换 css。
+  - 手机补丁 `css/markers_m13.css`：点击区 ≥48×48（设计稿 44，取大者，透明 padding）、物件牌字 12→13px、物件当目标时补回金底（设计稿 .prop 规则写在 .target 后面把金底盖掉了）。
+  - 旧的画布红三角目标标记停用（有名牌层时 story.js 不画）。
+- 路线进「任务」面板：`hud.js` 任务面板加「路线」一节（`css/tasks_routes_m13.css`，行高 48、字 15）。第一章 A/B/C：点一条 → 关面板、走到满掌柜身边、开他的选线对白并用 `Dialog.choose` 点下同一个选项（route 指令 / 切队长 / 接 B1 等对白，与手点完全同一条代码）；还没听过锦囊的先播开场，到「三条路，你们挑一条」时自动选。进行中 / 已完有标签。第二章起显示本章清单，点未完成项走向目标。数据来自 `Story.routeInfo()`。
+- 铺满细化：场景相机改成完全 cover（`game.js` CAM_COVER；竖屏不再放大上限 2 倍而露出底图外的米色填充），镜头跟随队长并夹在底图内。
+  火锅店底图底部两角本身的米色空地：`tools/make_floor_ext.py` 按等距地板规律（2:1 斜缝、竖向间距 62 = tileH、错位短横缝、平涂）续铺 → `assets/bg_room_ext.png`（运行时用；`assets/bg_room.png` 与锁定的 `art/ch7/bg_room_flat_sign.png` 仍 md5 一致）。`js/floor_ext.js` 注册该图；`Fill.drawExtended` 对超出底图的下/左/右边也按同一套地板参数铺代码地板，不再填纯色。
+- 自测：`tools/selftest_m13.py` 第 8 节换成名牌 / 路线 / 铺满用例 + 锁定 178 个文件 md5 基线校验。截图：`screenshots/m13_markers_{land_iphone,land_android,port_iphone,port_android}.png`（`*_edge.png` 贴边）、`m13_markers_routes.png`、`m13_markers_before_after.png`。
