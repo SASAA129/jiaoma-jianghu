@@ -1,0 +1,94 @@
+/* 《椒麻江湖》平涂 UI 皮肤 v1（游戏设计 Bot，art/ui_flat/ui_flat.css 原样复制；M13 仅在字体栈补了 Noto Sans SC / 思源黑体本地名）
+   用法：在 style.css、hud.css 之后引入，只覆盖外观，不改布局逻辑。
+   尺寸以 CSS 像素计（手机横屏 ~390px 高时整体按 --s 缩放）。 */
+:root{
+  /* 配色：取自平涂火锅店/大地图 */
+  --c-cream:#FFF6E8;   /* 面板底 */
+  --c-cream2:#F6E6CC;  /* 次级底/选中前 */
+  --c-wood:#6B4A33;    /* 描边、正文 */
+  --c-wood2:#9A6B47;   /* 次级描边、说明字 */
+  --c-chili:#D9472B;   /* 主强调：主按钮、名字牌 */
+  --c-chili-d:#A83420; /* 主按钮按下 */
+  --c-jade:#2F9A8F;    /* 次强调：确认、可交互提示 */
+  --c-gold:#E8B04A;    /* 高亮、角标、新内容点 */
+  --c-hp:#E0503A; --c-mp:#3C8FD0;
+  --c-shadow:rgba(60,35,20,.22);
+  --r-lg:18px; --r-md:12px; --r-sm:8px;
+  --bw:3px;            /* 统一描边 */
+  --font:"PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans CJK SC","Noto Sans SC","Source Han Sans SC","Microsoft YaHei",sans-serif;
+  /* 兼容旧变量 */
+  --ink:var(--c-wood); --paper:var(--c-cream); --paper2:var(--c-cream2); --seal:var(--c-chili); --gold:var(--c-gold);
+}
+html,body,button{font-family:var(--font);}
+body{color:var(--c-wood);}
+
+/* ---------- 通用平涂按钮 ---------- */
+.ui button,.hp-btn,.hud-talk{
+  font-family:var(--font); font-weight:700; letter-spacing:1px;
+  color:var(--c-wood); background:var(--c-cream);
+  border:var(--bw) solid var(--c-wood); border-radius:var(--r-md);
+  box-shadow:0 4px 0 var(--c-wood), 0 6px 10px var(--c-shadow);
+  transition:transform .06s, box-shadow .06s;
+}
+.ui button:active,.hp-btn:active,.hud-talk:active{transform:translateY(3px); box-shadow:0 1px 0 var(--c-wood),0 2px 4px var(--c-shadow);}
+.ui button.primary,.hud-talk{background:var(--c-chili); color:#fff; border-color:var(--c-chili-d); box-shadow:0 4px 0 var(--c-chili-d),0 6px 10px var(--c-shadow);}
+
+/* ---------- 右下圆钮菜单 ---------- */
+#menu-btns button,.hud-br button{
+  width:64px; height:64px; border-radius:50%; padding:0;
+  font-size:15px; line-height:1.1; background:var(--c-cream);
+}
+#menu-btns .mb-menu{background:var(--c-chili); color:#fff; border-color:var(--c-chili-d); box-shadow:0 4px 0 var(--c-chili-d),0 6px 10px var(--c-shadow);}
+/* 新内容小红点：给按钮加 class="has-new" */
+.has-new{position:relative;}
+.has-new::after{content:""; position:absolute; top:4px; right:4px; width:12px; height:12px; border-radius:50%;
+  background:var(--c-gold); border:2px solid var(--c-wood);}
+
+/* 交谈大钮 */
+.hud-talk{width:88px; height:88px; border-radius:50%; font-size:22px;}
+
+/* ---------- 面板 / 菜单卡片 ---------- */
+.panel,#hud-panel .hp-box,#action-menu{
+  background:var(--c-cream); border:var(--bw) solid var(--c-wood); border-radius:var(--r-lg);
+  box-shadow:0 6px 0 var(--c-wood),0 10px 24px var(--c-shadow); padding:14px 16px;
+}
+.panel-title,.hp-head{font-size:20px; font-weight:800; letter-spacing:2px; text-align:center;
+  color:#fff; background:var(--c-chili); border:none; border-radius:var(--r-md); padding:6px 0; margin:-4px 0 10px;}
+#action-menu button{border-radius:var(--r-md); font-size:18px; padding:10px 0; letter-spacing:2px; margin:6px 0;}
+#action-menu .am-title{font-size:16px; font-weight:700; color:var(--c-chili);}
+
+/* ---------- 左上头像 + 血蓝条 ---------- */
+.hud-frame{background:var(--c-cream); border:var(--bw) solid var(--c-wood); border-radius:var(--r-lg);
+  box-shadow:0 4px 0 var(--c-wood);}
+.hud-avatar{border:var(--bw) solid var(--c-wood); border-radius:50%; background:var(--c-cream2);}
+.hud-name{font-size:16px; font-weight:800; color:var(--c-wood);}
+.hud-bar{height:10px; border-radius:6px; background:#EADBC2; border:2px solid var(--c-wood); overflow:hidden;}
+.hud-bar.hp > *,.hud-bar .hp{background:var(--c-hp);}
+.hud-bar.mp > *,.hud-bar .mp{background:var(--c-mp);}
+
+/* ---------- 左侧任务追踪条 ---------- */
+.hud-track{background:rgba(255,246,232,.92); border:2px solid var(--c-wood); border-left:6px solid var(--c-chili);
+  border-radius:var(--r-md); padding:8px 12px; box-shadow:0 3px 0 var(--c-wood2);}
+.hud-track-t{font-size:13px; font-weight:800; color:var(--c-chili); letter-spacing:1px;}
+.hud-track,.hud-goal,.hp-goal{font-size:15px; line-height:1.45;}
+
+/* ---------- 对话框 ---------- */
+#dialog .scroll{
+  background:var(--c-cream); border:var(--bw) solid var(--c-wood); border-radius:var(--r-lg);
+  box-shadow:0 6px 0 var(--c-wood),0 12px 28px var(--c-shadow);
+  padding:22px 26px 18px 26px; background-image:none;
+}
+#dialog .portrait{border:var(--bw) solid var(--c-wood); border-radius:50%; background:var(--c-cream2);}
+#dialog .seal{  /* 名字牌 */
+  position:relative; top:-34px; margin-bottom:-26px;
+  display:inline-block; padding:4px 18px; font-size:18px; font-weight:800; letter-spacing:2px;
+  color:#fff; background:var(--c-chili); border:var(--bw) solid var(--c-chili-d); border-radius:999px;
+  box-shadow:0 3px 0 var(--c-chili-d);
+}
+#dialog .text{font-size:20px; line-height:1.7; font-weight:500; color:var(--c-wood); min-height:68px; margin-top:4px;}
+#dialog .options{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:10px;}
+#dialog .options button{font-size:18px; padding:12px 18px; text-align:left; border-radius:var(--r-md);
+  background:var(--c-cream2); border:var(--bw) solid var(--c-wood); color:var(--c-wood); box-shadow:0 3px 0 var(--c-wood);}
+#dialog .options button:active{background:var(--c-gold);}
+#dialog .more{color:var(--c-chili); font-size:18px; animation:ufbob 1s ease-in-out infinite;}
+@keyframes ufbob{50%{transform:translateY(4px);}}

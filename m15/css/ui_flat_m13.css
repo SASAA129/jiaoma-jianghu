@@ -1,0 +1,160 @@
+/* M13：把 art/ui_flat 平涂规范接到 M12 现有 DOM 上（ui_flat.css 之后引入）。
+   M12 的 hud.css 用 #hud button{background:none;border:0} 这类带 id 的选择器，规范里的类选择器压不过，所以这里统一加 #hud / #dialog 前缀。
+   热区：圆钮 ≥56（竖屏 ≥48），交谈钮 ≥76，面板/菜单按钮 ≥48。 */
+:root { --rb: 64px; --talk: 88px; }
+html.hud-btn-large { --rb: 64px; --talk: 88px; }
+html.hud-btn-std   { --rb: 56px; --talk: 76px; }
+
+/* ---------- HUD 通用 ---------- */
+#hud { font-family: var(--font); color: var(--c-wood); }
+#hud button { font-family: var(--font); color: var(--c-wood); }
+#hud .hud-map, #hud .hud-rb, #hud .hud-fab {
+  width: var(--rb); height: var(--rb); min-width: 48px; min-height: 48px; border-radius: 50%;
+  background: var(--c-cream); border: var(--bw) solid var(--c-wood);
+  box-shadow: 0 4px 0 var(--c-wood), 0 6px 10px var(--c-shadow);
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  transition: transform .06s, box-shadow .06s;
+}
+#hud .hud-map span, #hud .hud-rb span, #hud .hud-fab span {
+  position: static; transform: none; background: none; padding: 0; border-radius: 0;
+  font-size: 15px; font-weight: 700; letter-spacing: 1px; line-height: 1.1; color: inherit; white-space: nowrap;
+}
+#hud .primary { background: var(--c-chili); color: #fff; border-color: var(--c-chili-d); box-shadow: 0 4px 0 var(--c-chili-d), 0 6px 10px var(--c-shadow); }
+#hud .hud-map:active, #hud .hud-rb:active, #hud .hud-fab:active, #hud .hud-talk:active {
+  transform: translateY(3px); box-shadow: 0 1px 0 var(--c-wood), 0 2px 4px var(--c-shadow);
+}
+#hud .primary:active { box-shadow: 0 1px 0 var(--c-chili-d), 0 2px 4px var(--c-shadow); }
+#hud .hud-fab-x { display: none; }
+#hud.menu-open .hud-fab-x { display: inline; }
+#hud.menu-open .hud-fab-lab { display: none; }
+#hud .hud-fab { background: var(--c-chili); color: #fff; border-color: var(--c-chili-d); box-shadow: 0 4px 0 var(--c-chili-d), 0 6px 10px var(--c-shadow); }
+#hud.menu-open .hud-fab { background: var(--c-cream2); color: var(--c-wood); border-color: var(--c-wood); box-shadow: 0 4px 0 var(--c-wood), 0 6px 10px var(--c-shadow); }
+#hud .hud-br { gap: 10px; bottom: calc(var(--sb) + 8px); }
+#hud .hud-br-row { gap: 10px; }
+
+/* 左上：头像 + 名字 + 血蓝条，一张奶油卡片 */
+#hud .hud-tl {
+  background: var(--c-cream); border: var(--bw) solid var(--c-wood); border-radius: var(--r-lg);
+  box-shadow: 0 4px 0 var(--c-wood), 0 6px 10px var(--c-shadow); padding: 5px 12px 5px 5px; gap: 8px;
+}
+#hud .hud-avatar { width: 52px; height: 52px; border: var(--bw) solid var(--c-wood); border-radius: 50%; background: var(--c-cream2); box-sizing: border-box; overflow: hidden; }
+#hud .hud-avatar canvas { left: 0; top: 0; width: 100%; height: 100%; }
+#hud .hud-stat { margin: 0; padding: 0; background: none; border: 0; min-width: 120px; }
+#hud .hud-name { font-size: 16px; font-weight: 800; color: var(--c-wood); line-height: 1.25; }
+#hud .hud-bar { height: 10px; margin-top: 4px; border-radius: 6px; background: #EADBC2; border: 2px solid var(--c-wood); box-sizing: content-box; }
+#hud .hud-bar.hp i { background: var(--c-hp); }
+#hud .hud-bar.mp i { background: var(--c-mp); }
+#hud .hud-bar span { display: none; }
+#hud-panel .hp-mem .hud-bar { height: 14px; border-radius: 7px; }
+#hud-panel .hp-mem .hud-bar span { line-height: 14px; font-size: 12px; }
+
+/* 任务条 */
+#hud .hud-track {
+  top: calc(var(--st) + 78px); background: rgba(255, 246, 232, .92); color: var(--c-wood);
+  border: 2px solid var(--c-wood); border-left: 6px solid var(--c-chili); border-radius: var(--r-md);
+  padding: 6px 12px; box-shadow: 0 3px 0 var(--c-wood2);
+}
+#hud .hud-track-t { font-size: 13px; font-weight: 800; color: var(--c-chili); }
+#hud .hud-track-x { font-size: 15px; line-height: 1.45; color: var(--c-wood); }
+#hud.track-open .hud-track { background: rgba(255, 246, 232, .97); }
+
+/* 右上地名 */
+#hud .hud-loc {
+  font-size: 15px; font-weight: 800; color: var(--c-wood); padding: 6px 12px;
+  background: var(--c-cream); border: var(--bw) solid var(--c-wood); border-radius: var(--r-md); box-shadow: 0 3px 0 var(--c-wood);
+}
+#hud .hud-loc em { color: var(--c-chili); font-size: 13px; }
+
+/* 交谈大钮：椒红实心白字 */
+#hud .hud-talk {
+  width: var(--talk); height: var(--talk); min-width: 76px; min-height: 76px; border-radius: 50%; box-sizing: border-box;
+  background: var(--c-chili); color: #fff; border: var(--bw) solid var(--c-chili-d);
+  box-shadow: 0 4px 0 var(--c-chili-d), 0 6px 10px var(--c-shadow);
+  display: flex; align-items: center; justify-content: center;
+}
+#hud .hud-talk:active { transform: translateX(-50%) translateY(3px); }
+#hud .hud-talk b { font-size: 22px; font-weight: 800; letter-spacing: 2px; color: #fff; pointer-events: none; }
+#hud .hud-talk .hud-talk-who {
+  position: absolute; left: 50%; top: 100%; margin-top: 8px; transform: translateX(-50%); pointer-events: none;
+  font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--c-wood); padding: 2px 10px;
+  background: var(--c-cream); border: 2px solid var(--c-wood); border-radius: 999px; bottom: auto;
+}
+#hud .hud-talk .hud-talk-who:empty { display: none; }
+#hud.menu-open .hud-talk { bottom: calc(var(--sb) + var(--rb) + 30px); }
+#hud .hud-talk { bottom: calc(var(--sb) + 34px); }
+
+/* 竖屏：底栏六钮（不放浮钮），圆钮按屏宽收一点但 ≥48 */
+@media (orientation: portrait) {
+  #hud .hud-br { background: rgba(255, 246, 232, .9); border: 0; border-top: var(--bw) solid var(--c-wood); padding: 8px 4px calc(10px + env(safe-area-inset-bottom)); bottom: 0; left: 0; right: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  #hud .hud-br-row { gap: 4px; justify-content: space-around; }
+  #hud .hud-rb { width: max(48px, min(var(--rb), calc((100vw - 48px) / 6))); height: max(48px, min(var(--rb), calc((100vw - 48px) / 6))); }
+  #hud .hud-rb span { font-size: 14px; }
+  #hud .hud-talk, #hud.menu-open .hud-talk { bottom: calc(var(--sb) + 100px); }
+  #hud .hud-track { top: calc(var(--st) + 76px); }
+  #hud .hud-stat { min-width: 92px; }
+  #hud .hud-loc { max-width: calc(100vw - 290px); font-size: 14px; padding: 5px 8px; }
+  #hud .hud-loc em { display: none; }
+}
+
+/* ---------- 面板 ---------- */
+#hud-panel { font-family: var(--font); }
+#hud-panel .hp-box { color: var(--c-wood); padding: 12px 14px 14px; font-family: var(--font); }
+#hud-panel .hp-head {
+  display: flex; align-items: center; justify-content: center; position: relative; min-height: 48px; box-sizing: border-box;
+  margin: 0 0 10px; padding: 4px 52px; color: #fff; background: var(--c-chili); border-radius: var(--r-md); border: 0;
+}
+#hud-panel .hp-close { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); color: #fff; width: 48px; height: 48px; font-size: 22px; background: none; border: 0; box-shadow: none; }
+#hud-panel .hp-body { color: var(--c-wood); font-size: 16px; line-height: 1.6; padding: 4px 4px 6px; }
+#hud-panel .hp-body h3 { color: var(--c-chili); font-size: 17px; font-weight: 800; }
+#hud-panel .hp-row { border-bottom: 2px dashed #E3CFAE; }
+#hud-panel .hp-row small, #hud-panel .hp-note, #hud-panel .hp-empty { color: var(--c-wood2); font-size: 14px; }
+#hud-panel .hp-btn { min-height: 48px; font-size: 16px; color: var(--c-wood); background: var(--c-cream); border: var(--bw) solid var(--c-wood); border-radius: var(--r-md); box-shadow: 0 4px 0 var(--c-wood); margin: 10px 0; }
+#hud-panel .hp-btn.danger { background: var(--c-chili); color: #fff; border-color: var(--c-chili-d); box-shadow: 0 4px 0 var(--c-chili-d); }
+#hud-panel .hp-mem { border: 2px solid #E3CFAE; border-radius: var(--r-md); background: #FFFBF3; }
+#hud-panel .hp-mem.lead { border-color: var(--c-chili); }
+#hud-panel .hp-mem canvas { border: var(--bw) solid var(--c-wood); background: var(--c-cream2); box-sizing: border-box; }
+#hud-panel .hp-mem-x em { background: var(--c-chili); }
+#hud-panel .hp-mem .hud-bar { border: 2px solid var(--c-wood); background: #EADBC2; }
+#hud-panel .hp-mem .hud-bar.hp i { background: var(--c-hp); } #hud-panel .hp-mem .hud-bar.mp i { background: var(--c-mp); }
+#hud-panel .hp-mem .hud-bar span { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.5); }
+
+/* ---------- 对话框（屏幕层，手机 CSS 像素） ---------- */
+#dialog.uf-screen {
+  position: fixed; left: max(110px, var(--sl)); right: max(110px, var(--sr)); bottom: calc(var(--sb) + 6px); top: auto;
+  z-index: 39; font-family: var(--font); color: var(--c-wood); transform: none;
+}
+#dialog.uf-screen.uf-covered { visibility: hidden; }
+#dialog.uf-screen .scroll {
+  min-height: 0; max-height: none; gap: 16px; align-items: flex-start;
+  border: var(--bw) solid var(--c-wood); background: var(--c-cream); background-image: none;
+}
+#dialog.uf-screen .scroll::before, #dialog.uf-screen .scroll::after { display: none; }
+#dialog.uf-screen .portrait { width: 72px; height: 72px; align-self: flex-start; margin-top: 4px; box-sizing: border-box; }
+#dialog.uf-screen .body { min-width: 0; overflow: visible; }
+#dialog.uf-screen .text { max-height: 38vh; overflow-y: auto; }
+#dialog.uf-screen .seal { transform: none; font-family: var(--font); letter-spacing: 2px; }
+#dialog.uf-screen .seal:empty { display: none; }
+#dialog.uf-screen .text { font-size: 20px; line-height: 1.7; font-weight: 500; min-height: 34px; margin-top: 0; word-break: break-word; }
+#dialog.uf-screen .options { transform: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; flex-direction: initial; align-items: stretch; }
+#dialog.uf-screen .options button { min-height: 48px; font-size: 18px; font-weight: 700; padding: 10px 16px; line-height: 1.4; font-family: var(--font); white-space: normal; text-align: left; }
+#dialog.uf-screen .options button b { color: var(--c-chili); }
+#dialog.uf-screen .more { right: 2px; bottom: -4px; animation: ufbob 1s ease-in-out infinite; }
+@media (orientation: portrait) {
+  #dialog.uf-screen { left: var(--sl); right: var(--sr); }
+  #dialog.uf-screen .scroll { padding: 20px 16px 14px; gap: 12px; }
+  #dialog.uf-screen .portrait { width: 56px; height: 56px; }
+  #dialog.uf-screen .options { grid-template-columns: 1fr; }
+}
+@media (max-height: 420px) and (orientation: landscape) {
+  #dialog.uf-screen .scroll { padding: 18px 22px 14px; }
+  #dialog.uf-screen .text { max-height: calc(100vh - 230px); min-height: 34px; }
+}
+
+/* ---------- 交互菜单（舞台内，按舞台缩放反向放大到手机 CSS 像素） ---------- */
+#action-menu {
+  transform-origin: 50% 100%; transform: translate(-50%, -100%) scale(var(--inv-scale, 1));
+  min-width: 150px; padding: 10px 12px; font-family: var(--font);
+}
+#action-menu button { min-height: 48px; font-family: var(--font); font-size: 18px; padding: 10px 0; letter-spacing: 2px; margin: 6px 0; color: var(--c-wood); }
+#action-menu button:hover { background: var(--c-cream2); }
+#action-menu .am-title { font-family: var(--font); }
