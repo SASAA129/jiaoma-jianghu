@@ -30,31 +30,19 @@
     return out;
   }
   // 在世界坐标里画底图 (0,0,W,H)，并把视野 v（世界坐标矩形）里超出底图的部分用边缘延伸色补满
-  // M13：floor = { base, line, phase, tileH, slope }：超出底图的下 / 左 / 右边按等距地板规律（2:1 斜缝、竖向间距 tileH）续铺平涂地板，不再填纯色
-  var floorPat = null, floorKey = "";
-  function floorPattern(ctx, fl) {
-    var k = JSON.stringify(fl); if (floorPat && floorKey === k) return floorPat;
-    var th = fl.tileH || 62, tw = th / (fl.slope || 0.5), cv = document.createElement("canvas"); cv.width = Math.round(tw); cv.height = Math.round(th);
-    var x = cv.getContext("2d"), rgb = function (c) { return "rgb(" + c.map(Math.round).join(",") + ")"; };
-    x.fillStyle = rgb(fl.base); x.fillRect(0, 0, cv.width, cv.height);
-    x.strokeStyle = rgb(fl.line); x.lineWidth = 1.6;
-    var c = (fl.phase || 0) % th;
-    [-th, 0, th].forEach(function (o) { x.beginPath(); x.moveTo(0, c + o); x.lineTo(cv.width, c + o + cv.height); x.stroke(); });
-    floorPat = ctx.createPattern(cv, "repeat"); floorKey = k; return floorPat;
+  // M13 v2：延展图（已含墙外墙色渐变）画在 rect；视野再超出 rect 的部分用同一墙色渐变（贴边 c0 → 外 c1），不铺地板、不填米色
+  function drawWallExt(ctx, img, R, v, cols) {
+    var c0 = cols[0], c1 = cols[1], x0 = v.x - 2, y0 = v.y - 2, x1 = v.x + v.w + 2, y1 = v.y + v.h + 2, D = 260;
+    ctx.fillStyle = c1; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    var g;
+    if (x0 < R.x) { g = ctx.createLinearGradient(R.x, 0, R.x - D, 0); g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(x0, y0, R.x - x0, y1 - y0); }
+    if (x1 > R.x + R.w) { g = ctx.createLinearGradient(R.x + R.w, 0, R.x + R.w + D, 0); g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(R.x + R.w, y0, x1 - R.x - R.w, y1 - y0); }
+    if (img) ctx.drawImage(img, R.x, R.y, R.w, R.h);
   }
-  function drawExtended(ctx, img, W, H, v, fallback, floor) {
+  function drawExtended(ctx, img, W, H, v, fallback) {
     ctx.fillStyle = fallback || "#efe6d2";
     ctx.fillRect(v.x - 2, v.y - 2, v.w + 4, v.h + 4);
     if (!img) return;
-    if (floor) {
-      ctx.save(); ctx.fillStyle = floorPattern(ctx, floor);
-      ctx.fillRect(v.x - 2, Math.max(v.y - 2, H * 0.4), v.w + 4, v.h + 4);   // 上半是墙：仍走下面的边缘延伸；下半起铺地板
-      ctx.restore();
-      var y0f = v.y - 2;
-      if (y0f < 0) { var E0 = edgeColors(img); ctx.fillStyle = E0.top; ctx.fillRect(v.x - 2, y0f, v.w + 4, -y0f); }
-      ctx.drawImage(img, 0, 0, W, H);
-      return;
-    }
     var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, kx = iw / W, ky = ih / H, E = edgeColors(img), s = 3;
     var x0 = v.x - 2, y0 = v.y - 2, x1 = v.x + v.w + 2, y1 = v.y + v.h + 2;
     function strip(sx, sy, sw, sh, dx, dy, dw, dh) { if (dw > 0 && dh > 0) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }
@@ -94,6 +82,7 @@
     var contain = Math.min(SW / W, SH / H), cover = Math.max(SW / W, SH / H), k = cover;
     if (opt.safe) k = Math.min(k, SW / opt.safe.w, SH / opt.safe.h);
     if (opt.maxZoom) k = Math.min(k, contain * opt.maxZoom);
+    if (opt.minViewW) k = Math.min(k, SW / opt.minViewW);          // M13 v2：一屏至少看到 minViewW 世界 px 宽（竖屏不放大过头）
     k = Math.max(contain, k);
     var vw = SW / k, vh = SH / k, f = opt.focus || { x: W / 2, y: H / 2 };
     function axis(c, span, total, s0, s1) {
@@ -131,6 +120,6 @@
   function toggle() { if (active()) exit(); else enter(); }
   var iosHint = "iPhone 的 Safari 不支持网页全屏：点 Safari 底部「分享」→「添加到主屏幕」，再从主屏幕图标打开，就没有地址栏了。";
 
-  window.Fill = { viewport: viewport, view: view, drawExtended: drawExtended, edgeColors: edgeColors,
+  window.Fill = { viewport: viewport, view: view, drawExtended: drawExtended, drawWallExt: drawWallExt, edgeColors: edgeColors,
     fs: { supported: supported, active: active, standalone: standalone, enter: enter, exit: exit, toggle: toggle, isIOS: isIOS, iosHint: iosHint } };
 })();

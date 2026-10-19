@@ -46,5 +46,15 @@
   - 旧的画布红三角目标标记停用（有名牌层时 story.js 不画）。
 - 路线进「任务」面板：`hud.js` 任务面板加「路线」一节（`css/tasks_routes_m13.css`，行高 48、字 15）。第一章 A/B/C：点一条 → 关面板、走到满掌柜身边、开他的选线对白并用 `Dialog.choose` 点下同一个选项（route 指令 / 切队长 / 接 B1 等对白，与手点完全同一条代码）；还没听过锦囊的先播开场，到「三条路，你们挑一条」时自动选。进行中 / 已完有标签。第二章起显示本章清单，点未完成项走向目标。数据来自 `Story.routeInfo()`。
 - 铺满细化：场景相机改成完全 cover（`game.js` CAM_COVER；竖屏不再放大上限 2 倍而露出底图外的米色填充），镜头跟随队长并夹在底图内。
-  火锅店底图底部两角本身的米色空地：`tools/make_floor_ext.py` 按等距地板规律（2:1 斜缝、竖向间距 62 = tileH、错位短横缝、平涂）续铺 → `assets/bg_room_ext.png`（运行时用；`assets/bg_room.png` 与锁定的 `art/ch7/bg_room_flat_sign.png` 仍 md5 一致）。`js/floor_ext.js` 注册该图；`Fill.drawExtended` 对超出底图的下/左/右边也按同一套地板参数铺代码地板，不再填纯色。
+  （v1 曾在墙线外续铺地板，已在 v2 撤掉，见下节。）
 - 自测：`tools/selftest_m13.py` 第 8 节换成名牌 / 路线 / 铺满用例 + 锁定 178 个文件 md5 基线校验。截图：`screenshots/m13_markers_{land_iphone,land_android,port_iphone,port_android}.png`（`*_edge.png` 贴边）、`m13_markers_routes.png`、`m13_markers_before_after.png`。
+
+## M13 v2（10-19 15:25 游戏设计 Bot 两处修改）：竖屏缩放上限 + 墙线外改墙色
+- 缩放上限：`js/fill.js` view 新增 `minViewW`；`game.js` 相机 cover 但一屏至少看到 768 世界 px 宽（火锅店底图 1536 的一半）。竖屏 iPhone 390×844 / Android 360×800 视野 768 × 1662 / 1707（v1 只有约 473 宽）。
+  镜头横向跟着队长（小满）走，限制在店内；竖屏高度方向整店可见，上下多出的部分由延展图铺满；屏外目标交给贴边名牌。横屏不变（本来就满宽）。
+- 墙线外不铺地板：撤掉 v1 的 `tools/make_floor_ext.py` 和运行时代码地板（fill.js floorPattern 已删）。
+  新 `tools/make_wall_ext.py` → `assets/bg_room_ext.png`（1536×1864，世界 y=-420 起画）：底图里与图边连通的米色空地（墙线外）+ 上下各 420px 延展 = 深木墙色平涂渐变，紧贴墙线 #5A4130，离墙线 260px 到 #3B2C22，无纹理。
+  地板只在墙线内侧往下延展：左墙外沿（底边 x≈306）和地板右沿（x≈1268）按底图实测等距斜率 1.86 往下收拢成地板下角，区域内沿左墙方向回溯底图最后一行取色（墙带 + 地板缝自然接上）。
+  视野再超出延展图时（极端比例）：`Fill.drawWallExt` 左右按同一墙色从 #5A4130 渐变到 #3B2C22，上下用 #3B2C22（=渐变终点），不铺地板、不填米色。
+- 墙外不可走 / 不可点：`data/room_outside.js`（8px 一格掩膜，1=墙外），`js/floor_ext.js` 给火锅店挂 `outsideAt(x,y)`；`game.js` rebuild 把格心在墙外的格标为障碍（当前地图没有这样的格，自测核对 0 个），clickWorld 点到墙外直接返回 "outside"（不寻路、不弹交互、不出涟漪）。
+- 自测 v2 新增：视野宽 ≥768 且在延展图内、队长在画面里、下半屏米色 <1%、四边无纯黑、墙外取色在 #5A4130~#3B2C22 之间且判定为墙外、点墙外 5 处全部无效、墙外格不可走、墙内延展地板可点。截图 `screenshots/m13_markers_port_iphone_v2.png`、`m13_markers_port_android_v2.png`（四机型 m13_markers_*.png 已重拍）。

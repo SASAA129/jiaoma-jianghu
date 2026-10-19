@@ -9,8 +9,8 @@
   var stage, canvas, ctx, viewScale = 1, dpr = 1;
   // M13：铺满屏幕。舞台 = 整个视口（逻辑宽 SW × 高 SH，按 contain 比例 viewScale 缩放）；相机视野 cam（世界坐标）按设备比例 cover，限制在地图内
   var SW = 1536, SH = 1024, vpW = 0, vpH = 0, cam = { x: 0, y: 0, w: 1536, h: 1024, k: 1 }, camSnap = true, ZOOM_MAX = 2.0;
-  // M13 铺满细化：场景相机改成完全 cover（竖屏也铺到底、不再露出底图外的米色填充）；window.CAM_MAX_ZOOM 可临时改回上限
-  var CAM_COVER = true;
+  // M13 铺满细化 v2：相机 cover，但一屏至少看到 MIN_VIEW_W 世界 px（= 火锅店底图宽 1536 的一半）；上下不够就靠延展图（墙色渐变 / 墙线内地板）铺满
+  var CAM_COVER = true, MIN_VIEW_W = 768;
   var showGrid = false, time = 0, lastErr = 0;
   var blocked = {}, party = {}, chain = [], npcs = [], ripples = [], visSig = "";
   var menuTarget = null, toastTimer = null;
@@ -34,6 +34,9 @@
     M.props.filter(visible).forEach(function (p) {
       for (var i = 0; i < p.w; i++) for (var j = 0; j < p.h; j++) blocked[key(p.x + i, p.y + j)] = "prop";
     });
+    if (M.outsideAt) for (var oy = 0; oy < M.rows; oy++) for (var ox = 0; ox < M.cols; ox++) {   // M13 v2：格心在墙线外 → 不可走
+      var oc = G(ox + .5, oy + .5); if (M.outsideAt(oc.x, oc.y)) blocked[key(ox, oy)] = "outside";
+    }
     var vn = M.npcs.filter(visible);
     vn.forEach(function (n) { blocked[key(n.x, n.y)] = "npc"; });
     npcs = vn.map(function (n) {
@@ -354,8 +357,9 @@
     updateCamera(dt);
     var kd = canvas.width / cam.w;
     ctx.setTransform(kd, 0, 0, kd, -cam.x * kd, -cam.y * kd);
-    var bg = (M.bgExt && S.get(M.bgExt)) || S.get(M.bg || "bg_room");     // M13：火锅店用底部两角续铺了地板的 bg_room_ext（运行时生成物，不动锁定底图）
-    window.Fill.drawExtended(ctx, bg && bg.img, WW, WH, cam, M.night ? "#2a2f3a" : "#efe6d2", M.floorExt || null);
+    var ext = M.bgExt && S.get(M.bgExt), bg = S.get(M.bg || "bg_room");
+    if (ext && M.bgExtRect) window.Fill.drawWallExt(ctx, ext.img, M.bgExtRect, cam, M.wallColors || ["#5A4130", "#3B2C22"]);   // M13 v2：火锅店延展图（墙外墙色渐变）
+    else window.Fill.drawExtended(ctx, bg && bg.img, WW, WH, cam, M.night ? "#2a2f3a" : "#efe6d2");
     if (bg) {}
     else if (M.placeholder === "market") S.placeholderMarket(ctx, M, time);
     else if (M.placeholder === "river") S.placeholderRiver(ctx, M, time);
@@ -412,6 +416,7 @@
     if (window.Dialog.isOpen()) return "dialog";
     if (uiBlocking()) return "ui";
     if (menuTarget) { hideMenu(); return "menu-closed"; }
+    if (M.outsideAt && M.outsideAt(p.x, p.y)) return "outside";          // M13 v2：墙线外：不寻路、不弹交互、不出涟漪
     ripples.push({ x: p.x, y: p.y, t: 0 });
     var it = hitInteractable(p);
     if (it) { goInteract(it.id); return "interact:" + it.id; }
@@ -516,7 +521,7 @@
   // 相机：cover 视野（最多放大到 contain 的 ZOOM_MAX 倍，竖屏不至于只看到一小块），跟随队长，限制在地图内
   function updateCamera(dt) {
     var L = chain.length && leader(), f = L ? G(L.pos.x, L.pos.y) : { x: WW / 2, y: WH / 2 };
-    var v = window.Fill.view(SW, SH, WW, WH, { focus: { x: f.x, y: f.y - 120 }, maxZoom: CAM_COVER ? (window.CAM_MAX_ZOOM || 0) : ZOOM_MAX });
+    var v = window.Fill.view(SW, SH, WW, WH, { focus: { x: f.x, y: f.y - 120 }, maxZoom: CAM_COVER ? 0 : ZOOM_MAX, minViewW: CAM_COVER ? (M.minViewW || MIN_VIEW_W) : 0 });
     if (camSnap || !dt) { cam.x = v.x; cam.y = v.y; camSnap = false; }
     else { var a = Math.min(1, dt * 6); cam.x += (v.x - cam.x) * a; cam.y += (v.y - cam.y) * a; }
     cam.w = v.w; cam.h = v.h; cam.k = v.k;
@@ -570,6 +575,7 @@
     npcRect: function (id) { var n = npcs.filter(function (q) { return q.id === id; })[0]; return n ? spriteRect(n) : null; },
     npcIds: function () { return npcs.map(function (n) { return n.id; }); },
     clientToWorld: function (cx, cy) { var r = canvas.getBoundingClientRect(); return { x: cam.x + (cx - r.left) / r.width * cam.w, y: cam.y + (cy - r.top) / r.height * cam.h }; },
+    outsideAt: function (x, y) { return !!(M.outsideAt && M.outsideAt(x, y)); },
     leaderCell: function () { var L = leader(); return L ? { x: L.cell.x, y: L.cell.y } : null; },
     leaderId: function () { return chain[0]; }, renderHooks: [], bgHooks: [],
     colorOf: function (id) { return C.list[id] && C.list[id].color; },
