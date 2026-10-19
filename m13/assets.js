@@ -2,7 +2,7 @@
 // 生成时间：2026-10-17 10:26:45  源目录：art/locked → art/ch4 → art/ch3 → art/m5 → art/m4 → art/m3
 window.ASSETS = {
   "bg_room": {
-    "file": "bg_room_flat.png",
+    "file": "bg_room_flat_sign.png",
     "from": "ch7",
     "srcW": 1536,
     "srcH": 1024,

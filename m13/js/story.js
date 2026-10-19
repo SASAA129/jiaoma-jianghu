@@ -202,42 +202,40 @@
     });
   }
   // M13：平涂底图的招牌是空白木匾 → 程序写上「椒麻鸡火锅」（顺着匾面斜度）
-  // M13：底图上的空白木匾是斜透视的；在它上面叠一块端正的平涂牌匾（武侠夜色：深木框金边 + 深墨底 + 内金线 + 金字），五个字水平居中写正。
-  // 全部在世界坐标里画，跟着相机缩放走；canvas 按 devicePixelRatio 出图，字不糊。
+  // M13：招牌字改为画进底图 bg_room_flat_sign（map.js signText = null 时这里不画任何东西）。
+  // 保留斜切画法作备用：signText 填 {text,x,y,size,skew} 即按木匾透视画金字，不画底板。
   var SIGN_FONT = "'PingFang SC','HarmonyOS Sans SC','MiSans','Noto Sans SC','Noto Sans CJK SC','Source Han Sans SC','Microsoft YaHei',sans-serif";
-  function rrect(ctx, x, y, w, h, r) {
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
-  }
   function signBox() {
     var s = window.Game.map().signText; if (!s) return null;
-    var w = s.w || 422, h = s.h || 214;
-    return { x: s.x - w / 2, y: s.y - h / 2, w: w, h: h, cx: s.x, cy: s.y, size: s.size || 56, text: s.text };
+    // 斜切后外接框（截图/热区用）：按字宽 × |skew| 估竖直外扩
+    var fs = s.size || 56, n = Array.from(s.text || "").length, gap = Math.round(fs * 0.08);
+    var tw = n * fs + Math.max(0, n - 1) * gap, th = fs * 1.15;
+    var sk = s.skew || 0, pad = 18;
+    var x0 = s.x - tw / 2 - pad, x1 = s.x + tw / 2 + pad;
+    var yTop = Math.min(s.y - th / 2 + sk * (-tw / 2), s.y - th / 2 + sk * (tw / 2)) - pad;
+    var yBot = Math.max(s.y + th / 2 + sk * (-tw / 2), s.y + th / 2 + sk * (tw / 2)) + pad;
+    return { x: x0, y: yTop, w: x1 - x0, h: yBot - yTop, cx: s.x, cy: s.y, size: fs, text: s.text, skew: sk };
   }
   function drawShopSign(ctx) {
     if (window.Game.scene() !== "shop" || !window.Sprites.get("bg_room")) return;
-    var b = signBox(); if (!b) return;
+    var s = window.Game.map().signText; if (!s || !s.text) return;
+    var fs = s.size || 56, chars = Array.from(s.text), gap = Math.round(fs * 0.08);
+    var total = chars.length * fs + Math.max(0, chars.length - 1) * gap;
     ctx.save();
-    // 武侠夜色：深木外框 + 金边，深墨底 + 内金线
-    ctx.fillStyle = "rgba(0,0,0,.35)"; rrect(ctx, b.x + 3, b.y + 7, b.w, b.h, 10); ctx.fill();
-    ctx.fillStyle = "#2B2119"; rrect(ctx, b.x, b.y, b.w, b.h, 10); ctx.fill();
-    ctx.lineWidth = 2.5; ctx.strokeStyle = "#C9A45C"; ctx.stroke();
-    var m = 13; ctx.fillStyle = "#1A1E2A"; rrect(ctx, b.x + m, b.y + m, b.w - 2 * m, b.h - 2 * m, 6); ctx.fill();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = "#8E6D31"; ctx.stroke();
-    var g = m + 8; ctx.strokeStyle = "#E3C27A"; ctx.lineWidth = 2; rrect(ctx, b.x + g, b.y + g, b.w - 2 * g, b.h - 2 * g, 4); ctx.stroke();
-    // 四角金色小菱
-    ctx.fillStyle = "#E3C27A";
-    [[b.x + g, b.y + g], [b.x + b.w - g, b.y + g], [b.x + g, b.y + b.h - g], [b.x + b.w - g, b.y + b.h - g]].forEach(function (p) {
-      ctx.beginPath(); ctx.moveTo(p[0], p[1] - 7); ctx.lineTo(p[0] + 7, p[1]); ctx.lineTo(p[0], p[1] + 7); ctx.lineTo(p[0] - 7, p[1]); ctx.closePath(); ctx.fill();
-    });
-    // 五个字：逐字等距排开、水平居中、竖直居中、不倾斜
-    var chars = Array.from(b.text), fs = b.size, gap = Math.round(fs * 0.12), total = chars.length * fs + (chars.length - 1) * gap;
-    ctx.font = "900 " + fs + "px " + SIGN_FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    // 当前相机变换 × 平移到匾心 × 竖直剪切（右端上扬，贴合木匾透视）
+    var m = ctx.getTransform().multiply(new DOMMatrix([1, s.skew || 0, 0, 1, s.x, s.y]));
+    ctx.setTransform(m);
+    ctx.font = "900 " + fs + "px " + SIGN_FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineJoin = "round"; ctx.miterLimit = 2;
     chars.forEach(function (ch, i) {
-      var x = b.cx - total / 2 + fs / 2 + i * (fs + gap);
-      ctx.fillStyle = "#0E1016"; ctx.fillText(ch, x, b.cy + 3);      // 暗投影
-      ctx.fillStyle = "#E8C77E"; ctx.fillText(ch, x, b.cy);           // 金字
+      var x = -total / 2 + fs / 2 + i * (fs + gap);
+      // 薄暗描边 + 金字（无底板），贴在木匾炭黑面上
+      ctx.lineWidth = Math.max(3, fs * 0.08);
+      ctx.strokeStyle = "rgba(20,16,12,.72)";
+      ctx.strokeText(ch, x, 1);
+      ctx.fillStyle = "#E8C77E";
+      ctx.fillText(ch, x, 0);
     });
     ctx.restore();
   }

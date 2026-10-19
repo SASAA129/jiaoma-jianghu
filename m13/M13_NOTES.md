@@ -16,3 +16,9 @@
   battle.js / worldmap.js 同样 cover，但所有单位 / 节点不裁；resize、orientationchange、visualViewport resize、fullscreenchange 和每帧尺寸检查都会即时重算。css/fill_m13.css 只改布局（100dvh、全屏层跟舞台走、fs-chip）。
 - 全屏：设置里「全屏 / 退出全屏」+ 首次点击弹出「全屏」钮（requestFullscreen + webkit 前缀，成功后 screen.orientation.lock('landscape')）；
   iPhone Safari 无元素全屏 → 设置里提示「分享 → 添加到主屏幕」；manifest.json（display: fullscreen，orientation: landscape，图标 icons/）+ apple-mobile-web-app-capable / black-translucent / apple-touch-icon。
+
+## M13 继续改（10-19 下午）：招牌画进底图 + 血条加粗
+- 血条：css/ui_wuxia.css 与 art/ui_wuxia/ui_wuxia.css 逐字节一致。伙伴面板 14px 带数字，HUD 左上 10px（武侠夜色初版是 7px）。ui_flat_m13.css 同步成 10/14。只改 CSS。
+- 招牌：字由设计画进 `art/ch7/bg_room_flat_sign.png`（1536×1024，与旧 flat 同尺寸）。`assets/bg_room.png` 与之 md5 一致；prep_assets SRC_OVERRIDE 优先指向它。map.js `signText: null`，drawShopSign 不画任何叠字/牌匾/斜切字。
+- 桌上锅：不接入 prop_pot_flat；map.js props 仍为空；写实锅仍是底图像素（用户没说锅有问题）。
+- 碰撞 / 热区：底图同尺寸，walk / interactables 未改。
