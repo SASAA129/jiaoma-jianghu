@@ -311,8 +311,22 @@
     var padX = port ? 40 : 60, padY = port ? 30 : 40, extraR = port ? 40 : 240, extraB = port ? 50 : 190;
     var safe = { x: x0 - padX, y: y0 - padY, w: (x1 - x0) + padX * 2 + extraR, h: (y1 - y0) + padY + extraB };
     safe.x = Math.max(0, safe.x); safe.y = Math.max(0, safe.y);
-    return window.Fill ? window.Fill.view(cam.SW, cam.SH, WW, WH, { safe: safe, focus: { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 } })
+    var V = window.Fill ? window.Fill.view(cam.SW, cam.SH, WW, WH, { safe: safe, focus: { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 } })
       : { k: 1, x: 0, y: 0, w: WW, h: WH };
+    if (port) guardOrderGap(V, y0, cam);
+    return V;
+  }
+  // M15：竖屏时保证「最高单位（含头顶名牌）」上沿与出手顺序条底边之间 ≥ ORDER_GAP 舞台 px；不够就把镜头整体上移（单位往下挪）
+  var ORDER_GAP = 40;
+  function guardOrderGap(V, topWorld, cam) {
+    if (!root || !canvas) return;
+    var ob = root.querySelector(".bt-order"), cr = canvas.getBoundingClientRect();
+    if (!ob || !cr.height || !V.h) return;
+    var obr = ob.getBoundingClientRect(); if (!obr.height) return;
+    var sc = cam.scale || (cr.width / cam.SW) || 1, kc = cr.height / V.h;          // kc：世界 px → CSS px
+    var need = obr.bottom + ORDER_GAP * sc;                                        // 单位顶最少要在这条 CSS 线下面
+    var topCss = cr.top + (topWorld - V.y) * kc;
+    if (topCss < need) V.y -= (need - topCss) / kc;
   }
 
   // ---------- 绘制 ----------
@@ -452,6 +466,7 @@
         units: st.units.map(function (u) { return { id: u.id, name: u.name, side: u.side, hp: u.hp, hpMax: u.hpMax, mp: u.mp, mpMax: u.mpMax, spd: u.spd, defending: u.defending, x: u.x, y: u.y, h: unitHeight(u), sprite: !!(u.sprite && S.get(u.sprite)) }; }) };
     },
     // 测试用：直接对某单位造成伤害
+    setOrderGap: function (n) { ORDER_GAP = n; }, orderGap: function () { return ORDER_GAP; },   // 测试用
     _debugSet: function (id, hp) { st.units.forEach(function (u) { if (u.id === id) u.hp = hp; }); renderStatus(); }
   };
 })();

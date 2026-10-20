@@ -3,6 +3,7 @@
 // 伤害 = max(1, round(攻 × 倍率 × 随机(0.9~1.1) − 防 × 0.5))；防御状态下受到伤害减半，直到自己下次行动。
 // 立绘：sprite 有图用图（facing 写原图朝向，引擎自动翻转成面朝我方）（与我方同一 spriteScale 缩放），没图自动用代码占位小人（phHeight 为相对小满的身高）。
 // 撤退：成功率 fleeChance（默认 50%），成功→结算“撤退”回地图；失败→本回合行动作废（飘字“撤退失败”）。
+// M15：五场章节战斗已去掉 bg/bgFallback，统一走默认 bg_battle（= 对峙平涂 bg_battle_duel_flat，用户拍板）；场景图仍用于探索。
 // M4：battles 里可写 bg（背景图名）/ bgFallback（缺图时用 "market" 代码占位）、posEnemy（敌人站位）、fleeFail（撤退失败的提示）、
 //     win/lose/flee 的 toast（回地图时的提示）、win.flawless（三人都没倒下时额外设置的 flag）。
 window.BATTLE = {
@@ -70,7 +71,6 @@ window.BATTLE = {
     },
     "hongtang": {
       "title": "老码头夜市 · 茶馆门前",
-      "bg": "bg_market", "bgFallback": "market",
       "enemies": ["hongtang_jia", "hongtang_yi"],
       "posEnemy": [[520, 820], [640, 650]],
       "win":  { "set": ["c2_ht_win"], "flawless": ["c2_ht_flawless"], "title": "胜",
@@ -83,7 +83,6 @@ window.BATTLE = {
     },
     "tiesuanpan": {
       "title": "雾江古渡 · 江心拦船",
-      "bg": "bg_river", "bgFallback": "river",
       "enemies": ["tiesuanpan", "hongtang_bing"],
       "posEnemy": [[480, 780], [620, 620]],
       "win":  { "set": ["c3_ts_win"], "flawless": ["c3_ts_flawless"], "title": "胜",
@@ -96,7 +95,6 @@ window.BATTLE = {
     },
     "madawang": {
       "title": "麻婆岭 · 寨门前",
-      "bg": "bg_village", "bgFallback": "village",
       "enemies": ["madawang", "mashan_a"],
       "posEnemy": [[500, 780], [640, 620]],
       "win":  { "set": ["c4_mw_win"], "flawless": ["c4_mw_flawless"], "title": "胜",
@@ -109,7 +107,6 @@ window.BATTLE = {
     },
     "chilaosan": {
       "title": "红汤总舵 · 大鼎之前",
-      "bg": "bg_hq", "bgFallback": "hq",
       "enemies": ["chilaosan", "hongtang_ding"],
       "posEnemy": [[500, 780], [640, 620]],
       "win":  { "set": ["c5_fought", "c5_cl_win"], "flawless": ["c5_cl_flawless"], "title": "胜",
@@ -122,7 +119,6 @@ window.BATTLE = {
     },
     "chilaosan_final": {
       "title": "天下第一锅 · 擂台决战",
-      "bg": "bg_arena", "bgFallback": "arena",
       "enemies": ["chilaosan_f", "hongtang_ding"],
       "posEnemy": [[500, 780], [640, 620]],
       "win":  { "set": ["c6_final_win", "c6_cf_win"], "flawless": ["c6_cf_flawless"], "title": "胜",
