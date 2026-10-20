@@ -1,0 +1,120 @@
+/* 《椒麻江湖》战斗界面 · 武侠夜色（M15）
+   用法：放在 fill_m13.css 之后引入。只改外观和摆放，不改 DOM、不改 battle.js 逻辑；0 次生图。
+   单位是舞台像素：横屏缩放约 0.38，竖屏约 0.25，所以竖屏的字号和按钮都单独放大。 */
+#battle{
+  --b-bg:rgba(20,23,32,.86); --b-bg2:rgba(20,23,32,.94);
+  --b-gold:#C9A45C; --b-gold-l:#E3C27A; --b-gold-d:#8E6D31; --b-text:#F4EAD8; --b-text2:#BDB3A2;
+  --b-red:#C8402C; --b-glow:0 0 0 4px rgba(201,164,92,.14),0 10px 26px rgba(0,0,0,.45);
+  font-family:"PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  background:#14171f;
+}
+
+/* ---------- 标题：左上金线横幅 ---------- */
+#battle .bt-title{left:36px; top:28px; padding:10px 46px 10px 28px; font-size:34px; font-weight:700; letter-spacing:6px; color:var(--b-gold-l);
+  background:linear-gradient(90deg,var(--b-bg2) 70%,rgba(20,23,32,0)); border:0; border-left:6px solid var(--b-gold);
+  box-shadow:none; text-shadow:0 2px 4px #000;}
+
+/* ---------- 出手顺序：深墨长条，头像金/朱圈 ---------- */
+#battle .bt-order{top:22px; gap:16px; padding:12px 26px; background:var(--b-bg); border:1.5px solid var(--b-gold); border-radius:6px;
+  box-shadow:var(--b-glow);}
+#battle .bt-order-label{writing-mode:horizontal-tb; font-size:22px; font-weight:700; letter-spacing:4px; color:var(--b-gold-l); width:2.2em; line-height:1.2; text-align:center;}
+#battle .bt-order-list{gap:14px;}
+#battle .bt-chip{width:104px; padding:4px 0; border:0; background:none; color:var(--b-text); font-size:20px; transition:transform .2s;}
+#battle .bt-chip canvas{width:76px; height:76px; border:3px solid var(--b-gold); background:#2a2f3c; box-shadow:0 0 0 3px rgba(20,23,32,.9);}
+#battle .bt-chip.enemy canvas{border-color:var(--b-red);}
+#battle .bt-chip.enemy span{color:#F08A70;}
+#battle .bt-chip i{color:var(--b-text2); font-size:15px;}
+#battle .bt-chip.cur{background:none; transform:translateY(-2px) scale(1.12);}
+#battle .bt-chip.cur canvas{border-color:var(--b-gold-l); box-shadow:0 0 0 3px rgba(20,23,32,.9),0 0 18px 6px rgba(227,194,122,.75);}
+#battle .bt-chip.cur::after{content:""; position:absolute; left:50%; bottom:-14px; width:14px; height:14px; margin-left:-7px; background:var(--b-gold-l); transform:rotate(45deg);}
+#battle .bt-chip.done{opacity:.4;}
+#battle .bt-chip.dead{opacity:.25;}
+
+/* ---------- 提示：两端渐隐横幅 ---------- */
+#battle .bt-tip{top:200px; padding:12px 90px; font-size:30px; letter-spacing:3px; color:var(--b-text); border-radius:0;
+  background:linear-gradient(90deg,rgba(20,23,32,0),var(--b-bg2) 22%,var(--b-bg2) 78%,rgba(20,23,32,0));
+  border-top:1px solid rgba(201,164,92,.55); border-bottom:1px solid rgba(201,164,92,.55);}
+
+/* ---------- 我方状态：右侧深墨卡，粗血条带数字 ---------- */
+#battle .bt-status{right:36px; top:auto; bottom:250px; width:400px; gap:14px;}
+#battle .bs-row{position:relative; padding:12px 18px 14px 22px; background:var(--b-bg); border:1px solid rgba(201,164,92,.55); border-radius:6px;
+  box-shadow:0 8px 20px rgba(0,0,0,.35); color:var(--b-text);}
+#battle .bs-row b{font-size:28px; font-weight:700; letter-spacing:3px; color:var(--b-text);}
+#battle .bs-row em{font-size:18px; padding:1px 8px; background:#2F6FAE; border:1px solid #9cc6ec; border-radius:3px; vertical-align:4px;}
+#battle .bs-row.cur{border-color:var(--b-gold-l); box-shadow:0 0 0 3px rgba(227,194,122,.35),0 0 26px rgba(227,194,122,.45);}
+#battle .bs-row.cur::before{content:""; position:absolute; left:-1px; top:10px; bottom:10px; width:6px; background:var(--b-gold-l); border-radius:3px;}
+#battle .bs-row.cur b{color:var(--b-gold-l);}
+#battle .bs-row.dead{opacity:.4; filter:grayscale(1);}
+#battle .bs-bar{height:26px; margin-top:8px; background:#3a3f4c; border-radius:13px;}
+#battle .bs-bar i{border-radius:13px;}
+#battle .bs-bar.hp i{background:linear-gradient(#EA6E4E,#B7392A);}
+#battle .bs-bar.mp i{background:linear-gradient(#72B6E8,#2F6FAE);}
+#battle .bs-bar span{display:block; line-height:26px; font-size:18px; color:#fff; text-shadow:0 1px 2px #000; padding-left:12px; font-family:inherit;}
+
+/* ---------- 指令：底部菱形钮，「攻击」金色主钮 ---------- */
+#battle .bt-cmd{bottom:30px; gap:26px; padding:14px 120px; align-items:center; border:0; box-shadow:none;
+  background:linear-gradient(90deg,rgba(20,23,32,0),rgba(20,23,32,.82) 18%,rgba(20,23,32,.82) 82%,rgba(20,23,32,0));}
+#battle .bt-cmd::before,#battle .bt-cmd::after{content:""; position:absolute; left:12%; right:12%; height:1px; background:linear-gradient(90deg,transparent,var(--b-gold),transparent);}
+#battle .bt-cmd::before{top:0;} #battle .bt-cmd::after{bottom:0;}
+#battle .bt-cmd button{position:relative; z-index:0; width:150px; height:150px; padding:0; border:0; border-radius:0; background:none; box-shadow:none;
+  font-size:30px; font-weight:700; letter-spacing:2px; color:var(--b-text); text-shadow:0 2px 3px #000;}
+#battle .bt-cmd button::before{content:""; position:absolute; z-index:-1; left:15%; top:15%; width:70%; height:70%; border-radius:12px; transform:rotate(45deg);
+  background:var(--b-bg2); border:1.5px solid var(--b-gold); box-shadow:var(--b-glow); transition:transform .12s;}
+#battle .bt-cmd button[data-cmd=attack]{width:178px; height:178px; font-size:38px; color:#1E1F26; text-shadow:0 1px 0 rgba(255,240,200,.6);}
+#battle .bt-cmd button[data-cmd=attack]::before{background:linear-gradient(135deg,#F0D79A,#C9A45C 45%,#8E6D31); border-color:#F7E6B8;
+  box-shadow:0 0 0 5px rgba(20,23,32,.85),0 0 0 6px rgba(227,194,122,.7),0 0 24px rgba(227,194,122,.45);}
+#battle .bt-cmd button[data-cmd=flee]{opacity:.8;}
+#battle .bt-cmd button:hover{background:none; color:var(--b-gold-l);}
+#battle .bt-cmd button[data-cmd=attack]:hover{color:#1E1F26;}
+#battle .bt-cmd button:active::before{transform:rotate(45deg) scale(.9);}
+
+/* ---------- 武学 / 道具 子菜单：深墨招式卡 ---------- */
+#battle .bt-sub{bottom:44px; gap:18px; padding:22px 30px; background:var(--b-bg2); border:1px solid var(--b-gold); border-radius:6px; box-shadow:var(--b-glow);}
+#battle .bt-sub button{min-width:280px; min-height:96px; padding:14px 22px; font-size:30px; color:var(--b-text); background:rgba(255,255,255,.05);
+  border:1px solid rgba(201,164,92,.6); border-left:5px solid var(--b-gold); border-radius:4px; box-shadow:none;}
+#battle .bt-sub button b{font-weight:700; letter-spacing:2px;}
+#battle .bt-sub button small{font-size:19px; color:var(--b-text2); margin-top:6px;}
+#battle .bt-sub button:disabled{opacity:.35;}
+#battle .bt-sub button.back{min-width:120px; border-left-width:1px; color:var(--b-gold-l);}
+#battle .bt-cancel button{min-height:72px; padding:0 34px; font-size:28px; color:var(--b-gold-l); background:var(--b-bg2); border:1px solid var(--b-gold); border-radius:4px;}
+
+/* ---------- 结算：深墨卷轴 + 朱砂大印 ---------- */
+#battle .bt-result{background:rgba(8,9,14,.7);}
+#battle .br-paper{width:900px; padding:44px 64px 50px; color:var(--b-text); background:linear-gradient(180deg,#1d212c,#151821);
+  border:0; border-top:2px solid var(--b-gold); border-bottom:2px solid var(--b-gold); box-shadow:0 0 0 8px rgba(20,23,32,.9),0 0 0 9px rgba(201,164,92,.5),0 20px 50px rgba(0,0,0,.6);}
+#battle .br-big{width:170px; height:170px; line-height:164px; font-size:120px; background:#B8302A; border:5px solid #E9B49A; box-shadow:0 0 30px rgba(184,48,42,.6);}
+#battle .br-big.lose{background:#3a3f4c; border-color:#8a8f9c; box-shadow:none;}
+#battle .br-big.flee{background:#4c4a3a; border-color:#a39a7a; box-shadow:none;}
+#battle .br-title{color:var(--b-gold-l); font-size:40px;}
+#battle .br-lines p{color:var(--b-text); font-size:28px;}
+#battle .br-reward{color:var(--b-gold-l); font-size:26px;}
+#battle .br-paper button{min-height:84px; padding:0 54px; font-size:30px; color:#1E1F26; background:linear-gradient(#E3C27A,#8E6D31); border:1px solid #F0D79A; border-radius:4px;}
+
+/* ================= 竖屏：舞台缩放只有 ~0.25，整体放大；状态卡挪到下方横排 ================= */
+@media (orientation: portrait){
+  #battle .bt-title{font-size:52px; top:max(40px,calc(env(safe-area-inset-top)*4 + 20px)); left:0; padding:14px 60px 14px 40px;}
+  #battle .bt-order{top:calc(max(40px,calc(env(safe-area-inset-top)*4 + 20px)) + 120px); padding:18px 30px; gap:20px;}
+  #battle .bt-order-label{font-size:36px;}
+  #battle .bt-chip{width:200px; font-size:36px;}
+  #battle .bt-chip canvas{width:140px; height:140px; border-width:5px;}
+  #battle .bt-chip i{font-size:26px;}
+  #battle .bt-chip.cur::after{width:24px; height:24px; margin-left:-12px; bottom:-22px;}
+  #battle .bt-tip{top:auto; bottom:720px; font-size:50px; padding:20px 120px;}
+  #battle .bt-status{right:40px; left:40px; width:auto; bottom:430px; flex-direction:row; gap:24px;}
+  #battle .bs-row{flex:1; padding:20px 22px 24px 28px;}
+  #battle .bs-row b{font-size:48px;}
+  #battle .bs-row em{font-size:30px;}
+  #battle .bs-bar{height:44px; border-radius:22px; margin-top:14px;}
+  #battle .bs-bar i{border-radius:22px;}
+  #battle .bs-bar span{line-height:44px; font-size:30px; padding-left:16px; white-space:nowrap;}
+  /* 指令/子菜单/返回钮已由 .m12-hud 的 --ui-boost（竖屏约 1.8 倍）放大，这里只收窄间距，免得超出屏宽 */
+  .m12-hud #battle .bt-cmd{gap:6px; padding:16px 20px;}
+  #battle .bt-cmd button{width:140px; height:140px;}
+  #battle .bt-cmd button[data-cmd=attack]{width:166px; height:166px;}
+  .m12-hud #battle .bt-sub{flex-wrap:wrap; justify-content:center; max-width:800px; padding:16px;}
+  #battle .bt-sub button{min-width:240px;}
+  #battle .br-paper{width:1340px;}
+  #battle .br-title{font-size:64px;} #battle .br-lines p{font-size:46px;} #battle .br-reward{font-size:42px;}
+  #battle .br-big{width:260px; height:260px; line-height:252px; font-size:180px;}
+  #battle .br-paper button{min-height:140px; font-size:52px;}
+}

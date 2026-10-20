@@ -64,3 +64,29 @@
 - 2026-10-19 17:36 verify_online.py 147/147 通过（含 /m13/、/m14/ 逐字节未变、M15 十个章节×机型抽检）；md5sum -c 470 个全过；全部完成
 - 2026-10-19 17:45 锅显示宽度微调：data/art_override.js 加 dispScale（红汤大鼎 ×0.95、天下第一锅 ×0.88；锚点 340/869、374/846 与图片不动），game.js 绘制与点击判定同乘；擂台巨锅点击热区跟新锅图重标 x 680→744（原热区只有 69% 落在锅图内）；第 5–6 章四机型场景 114/114、主线 ch5→ch6 终幕 73s 0 报错、md5 470 全过；截图 screenshots/m15_pots_fix.png
 - 2026-10-19 17:45 重打 /workspace/game-m15.zip；接着 publish.sh 发布 + verify_online.py
+- 2026-10-19 17:55 锅微调已发布；verify_online.py 第一轮 145/148（m12 一张图线上返回 503 + m11 HUD 用例连带失败，本次未改 m11/m12），重跑 148/148 全过，/m13/、/m14/ 逐字节未变
+
+## 7. M15 战斗打击感 + 武侠夜色战斗界面（2026-10-20）
+范围：只做界面与特效，不做 A/B/C 玩法加深、不做 2 倍速 / 自动战斗；战斗背景新图等设计 Bot。
+
+### 打击感（独立模块 `js/battle_fx.js`，纯代码不生图）
+| 特效 | 实现 |
+|---|---|
+| 受击闪白 | 白色剪影叠在受击单位上，真实时间约 100ms（CFG.flash） |
+| 伤害飘字 | 普通 #FFE3C2/#7A1A10；暴击 ×1.5 +「暴」朱印 #F0D79A；治疗 #BFF0C0/#1F4F2A；闪避灰白斜体；招式名金字横幅 |
+| 震屏 | 普通 7px / 暴击 18px，指数衰减；`prefers-reduced-motion` 只留 25% |
+| 出招残影 | 冲刺时留 2–4 个朱金色半透明残影（减弱动效时 ≤2） |
+| 暴击顿帧 | hit-stop 约 80ms（CFG.hitStop），画面定格、闪白仍走完 |
+
+`js/battle.js` 只调 BattleFX 接口；`index.html` 在 battle.js 之前加载 battle_fx.js。
+
+### 武侠夜色战斗界面
+- `css/ui_battle_wuxia.css` 从 `art/ui_wuxia/battle/` 复制（md5 一致），紧跟 `fill_m13.css` 引入。
+- 画布四处（README）：敌人名牌深墨金边 + 朱红渐变血条；当前行动金圈 / 可选目标朱红闪圈；擂台线 `rgba(201,164,92,.28)`；竖屏收紧 bview.safe、上下用 #3B2C22 / rgba(20,23,32,.9) 延展。
+
+### 自测 / 截图
+- `tools/selftest_m15_fx.py`：49/49（四机型闪白·飘字·震屏·残影·顿帧·减弱动效·性能·打完流程 + 界面接入断言）。
+- 截图：`screenshots/m15_fx_{ghost,crit}_{land,port}_iphone.png`、`m15_fx_miss_port_iphone.png`、`m15_fx_ui_{land,port}.png`。
+
+- $(date '+%Y-%m-%d %H:%M') 战斗打击感五件套 + ui_battle_wuxia.css + README 四处画布改动完成；自测 49/49；基线 md5 470 全过；接着 zip / publish / verify
+- 2026-10-20 09:48 战斗打击感五件套 + ui_battle_wuxia.css + README 四处画布改动完成；自测 49/49；基线 md5 470 全过；接着 zip / publish / verify

@@ -200,14 +200,18 @@
   function hit(a, t, power, delay) {
     setTimeout(function () {
       if (!st) return;
-      var v = damage(a, t, power); t.hp = Math.max(0, t.hp - v); t.shake = 0.35;
+      var FX = window.BattleFX, rr = FX ? FX.roll(a, t) : { crit: false, miss: false };
+      if (rr.miss) { floatK(t, "闪避", "miss"); log(t.name + " 闪开了"); renderStatus(); return; }   // M15：闪避（只在敌方出手时）
+      var v = damage(a, t, power); if (rr.crit) v = Math.round(v * (FX ? FX.CFG.critMul : 1.5));
+      t.hp = Math.max(0, t.hp - v); t.shake = 0.35;
       playFx("fx_hit", t, 230, 0.45, 0);
-      float(t, "-" + v + (t.defending ? " 防" : ""), "#c0281c");
+      if (FX) FX.onHit(t, rr.crit ? "crit" : "normal");                                 // M15：闪白 + 震屏（暴击加顿帧）
+      floatK(t, "-" + v + (t.defending ? " 防" : ""), rr.crit ? "crit" : "normal");
       if (t.hp <= 0) float(t, "倒下", "#2b2622", 26);
       renderStatus();
     }, delay || 0);
   }
-  function lunge(a, t) { a.anim = { t: 0, dur: 0.5, tx: t.x + (a.side === "party" ? 120 : -120), ty: t.y }; }
+  function lunge(a, t) { a.anim = { t: 0, dur: 0.5, tx: t.x + (a.side === "party" ? 120 : -120), ty: t.y }; if (window.BattleFX) window.BattleFX.ghostStart(a); }
   function doAttack(a, t) {
     showCmd(false); lunge(a, t); hit(a, t, 1, 250);
     log(a.name + " 攻击 " + t.name);
@@ -220,7 +224,7 @@
     if (!s.heal) targets.forEach(function (t) { setTimeout(function () { if (st) playFx("fx_skill", t, 340, 0.8, -3); }, 200); });  // 目标处
     else targets.forEach(function (t) { if (t !== a) setTimeout(function () { if (st) playFx("fx_skill", t, 260, 0.8, 2); }, 250); });
     log(a.name + " 使出「" + s.name + "」");
-    if (s.heal) targets.forEach(function (t) { var h = Math.min(s.heal, t.hpMax - t.hp); t.hp += h; setTimeout(function () { float(t, "+" + h, "#2e8b3a"); renderStatus(); }, 350); });
+    if (s.heal) targets.forEach(function (t) { var h = Math.min(s.heal, t.hpMax - t.hp); t.hp += h; setTimeout(function () { if (st) { floatK(t, "+" + h, "heal"); renderStatus(); } }, 350); });
     else { if (targets.length === 1) lunge(a, targets[0]); targets.forEach(function (t, i) { hit(a, t, s.power, 300 + i * 120); }); }
     after(1100);
   }
@@ -256,7 +260,13 @@
   function float(u, text, color, size, dy, icon) {
     var H = unitHeight(u), isNum = /^[-+]\d/.test(text);
     var y = isNum ? u.y - H * 0.55 : Math.max(280, u.y - H - 70 + (dy || 0));
-    st.floats.push({ x: u.x, y: y, text: text, color: color, size: size || (isNum ? 40 : 30), t: 0, icon: icon || null });
+    var f = { x: u.x, y: y, text: text, color: color, size: size || (isNum ? 40 : 30), t: 0, icon: icon || null, kind: /^\+\d+$/.test(text) ? "heal" : "text", life: 1.3 };
+    if (window.BattleFX) { f.size = size || null; if (icon && S.get(icon)) f.iconImg = S.get(icon).img; window.BattleFX.float(st.floats, f); } else st.floats.push(f);
+  }
+  // M15：伤害 / 治疗 / 闪避飘字（样式在 js/battle_fx.js：普通朱红、暴击金色大字 +「暴击」、治疗青绿、闪避灰白斜体）
+  function floatK(u, text, kind) {
+    var H = unitHeight(u), f = { x: u.x + (kind === "crit" ? 0 : (Math.random() - 0.5) * 30), y: u.y - H * 0.55, text: text, t: 0, kind: kind, life: 1.3 };
+    if (window.BattleFX) window.BattleFX.float(st.floats, f); else { f.color = kind === "heal" ? "#2e8b3a" : "#c0281c"; f.size = 40; st.floats.push(f); }
   }
   // 特效：fx_skill 武学（施放者/目标处，缓转）、fx_hit 每次命中（目标身上，快闪）。缺图时不播，不影响流程。
   function playFx(name, u, size, dur, spin) {
@@ -297,15 +307,18 @@
       y0 = Math.min(y0, r.y - 80); y1 = Math.max(y1, u.y + 30);
     });
     if (x0 > x1) { x0 = 200; x1 = 1336; y0 = 150; y1 = 900; }
-    var safe = { x: x0 - 60, y: y0 - 40, w: (x1 - x0) + 120 + 240, h: (y1 - y0) + 40 + 190 };   // 右侧留状态栏、底部留指令圆钮
+    var port = cam.SH > cam.SW;   // M15 武侠夜色：竖屏时状态栏 / 指令已挪到场景外，safe 只包双方站位，镜头放大填满出手顺序条与提示条之间
+    var padX = port ? 40 : 60, padY = port ? 30 : 40, extraR = port ? 40 : 240, extraB = port ? 50 : 190;
+    var safe = { x: x0 - padX, y: y0 - padY, w: (x1 - x0) + padX * 2 + extraR, h: (y1 - y0) + padY + extraB };
     safe.x = Math.max(0, safe.x); safe.y = Math.max(0, safe.y);
     return window.Fill ? window.Fill.view(cam.SW, cam.SH, WW, WH, { safe: safe, focus: { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 } })
       : { k: 1, x: 0, y: 0, w: WW, h: WH };
   }
 
   // ---------- 绘制 ----------
-  function drawUnit(u, dt) {
-    var x = u.x, y = u.y;
+  function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function drawUnit(u, dt, dtR) {
+    var x = u.x, y = u.y, FX = window.BattleFX, moving = !!u.anim;
     if (u.anim) {
       u.anim.t += dt; var k = u.anim.t / u.anim.dur, e = k < .5 ? k * 2 : (1 - k) * 2;
       x += (u.anim.tx - u.x) * e * 0.85; y += (u.anim.ty - u.y) * e * 0.85;
@@ -316,27 +329,38 @@
     ctx.save();
     if (u.hp <= 0) ctx.globalAlpha = 0.35;
     ctx.fillStyle = "rgba(30,20,10,.3)"; ctx.beginPath(); ctx.ellipse(x, y, H * .2, H * .06, 0, 0, Math.PI * 2); ctx.fill();
-    if (cur) { ctx.strokeStyle = "#c9a45c"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(x, y, H * .26, H * .08, 0, 0, Math.PI * 2); ctx.stroke(); }
+    if (cur) { ctx.strokeStyle = "#E3C27A"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(x, y, H * .26, H * .08, 0, 0, Math.PI * 2); ctx.stroke(); }   // M15：当前行动金圈
     if (st.picking && u.hp > 0 && st.picking.filter(u)) {
-      ctx.strokeStyle = "rgba(192,40,28," + (0.6 + Math.sin(st.t * 8) * 0.4) + ")"; ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(217,87,60," + (0.55 + Math.sin(st.t * 8) * 0.4) + ")"; ctx.lineWidth = 5;   // M15：可选目标朱红闪圈
       ctx.beginPath(); ctx.ellipse(x, y, H * .3, H * .09, 0, 0, Math.PI * 2); ctx.stroke();
     }
     var bob = cur ? Math.sin(st.t * 5) * 3 : 0;
-    var r = u.sprite && S.get(u.sprite);
-    if (r) {
-      var k2 = C.spriteScale / (r.meta.prepScale || 1) * u.heightMul * BS;
+    var r = u.sprite && S.get(u.sprite), k2 = r ? C.spriteScale / (r.meta.prepScale || 1) * u.heightMul * BS : 1;
+    var body = function (bx, by) {
+      if (r) {
+        ctx.save(); ctx.translate(bx, by); if (u.flip) ctx.scale(-1, 1);
+        ctx.drawImage(r.img, -r.meta.ax * k2, -r.meta.h * k2, r.meta.w * k2, r.meta.h * k2); ctx.restore();
+      } else S.placeholderPerson(ctx, bx, by, H, u.color, u.name, u.flip, false);
+    };
+    if (FX) { FX.ghostTrack(u, x, y - bob, dt, moving); FX.drawGhosts(ctx, u, body); }   // M15：出招残影（画在本体后面）
+    body(x, y - bob);
+    if (FX && FX.flashing(u)) {                                                                // M15：受击闪白（白色剪影叠在本体上）
       ctx.save(); ctx.translate(x, y - bob); if (u.flip) ctx.scale(-1, 1);
-      ctx.drawImage(r.img, -r.meta.ax * k2, -r.meta.h * k2, r.meta.w * k2, r.meta.h * k2); ctx.restore();
-    } else S.placeholderPerson(ctx, x, y - bob, H, u.color, u.name, u.flip, false);
+      if (r) FX.drawFlash(ctx, u, r.img, -r.meta.ax * k2, -r.meta.h * k2, r.meta.w * k2, r.meta.h * k2, null);
+      else FX.drawFlash(ctx, u, null, 0, 0, 0, 0, { x: -H * 0.22, y: -H, w: H * 0.44, h: H });
+      ctx.restore();
+    }
     ctx.restore();
-    if (u.side === "enemy" && u.hp > 0) {      // 敌人头顶血条
-      var w = 170, bx = u.x - w / 2, by = u.y - H - 44;
-      ctx.fillStyle = "rgba(43,38,34,.8)"; ctx.fillRect(bx - 3, by - 26, w + 6, 44);
-      ctx.fillStyle = "#f3e7c9"; ctx.font = "20px KaiTi, 'Noto Serif CJK SC', serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-      ctx.fillText(u.name, bx + 2, by - 6);
-      ctx.fillStyle = "#3d3630"; ctx.fillRect(bx, by, w, 10);
-      ctx.fillStyle = "#c0281c"; ctx.fillRect(bx, by, w * u.hp / u.hpMax, 10);
-      ctx.fillStyle = "#e9dcc0"; ctx.font = "14px sans-serif"; ctx.textAlign = "right"; ctx.fillText(u.hp + "/" + u.hpMax, bx + w, by - 6);
+    if (u.side === "enemy" && u.hp > 0) {      // M15 武侠夜色：敌人头顶名牌（README）
+      var w = 178, bx = u.x - w / 2, by = u.y - H - 44, pad = 4;
+      roundRect(ctx, bx - 4, by - 28, w + 8, 50, 4); ctx.fillStyle = "rgba(20,23,32,.88)"; ctx.fill();
+      ctx.strokeStyle = "#C9A45C"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = "#F4EAD8"; ctx.font = "bold 22px KaiTi, 'Noto Serif CJK SC', serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      ctx.fillText(u.name, bx + 4, by - 6);
+      ctx.fillStyle = "#BDB3A2"; ctx.font = "14px sans-serif"; ctx.textAlign = "right"; ctx.fillText(u.hp + "/" + u.hpMax, bx + w - 2, by - 6);
+      ctx.fillStyle = "#3a3f4c"; ctx.fillRect(bx, by, w, 14);
+      var g = ctx.createLinearGradient(0, by, 0, by + 14); g.addColorStop(0, "#EA6E4E"); g.addColorStop(1, "#B7392A");
+      ctx.fillStyle = g; ctx.fillRect(bx, by, w * u.hp / u.hpMax, 14);
     }
   }
   // 后厨门帘：与地图同一配置（map.js → kitchen.sprite），缺图则不画
@@ -350,13 +374,22 @@
   var last = 0;
   function loop(ts) {
     if (!st) { last = 0; return; }
-    var dt = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts; st.t += dt;
+    var dtR = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts;
+    var FX = window.BattleFX, dt = FX ? FX.step(dtR) : dtR;                   // M15：暴击顿帧期间 dt = 0（画面定格，闪白照常走完）
+    st.t += dt;
     try {
       resize();
       var V = bview(), kd = canvas.width / V.w;
       st.view = V;
-      ctx.setTransform(kd, 0, 0, kd, -V.x * kd, -V.y * kd);
-      ctx.fillStyle = "#e3d6bb"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4);
+      var sh = FX ? FX.shakeOffset(dtR) : { x: 0, y: 0 };                    // M15：震屏（世界 px，按时间衰减）
+      ctx.setTransform(kd, 0, 0, kd, -(V.x + sh.x) * kd, -(V.y + sh.y) * kd);
+      // M15：竖屏超出底图：上方墙色 #3B2C22，下方接到指令区的深墨
+      var port = canvas.height > canvas.width;
+      if (port) {
+        ctx.fillStyle = "#3B2C22"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, Math.max(0, 0 - V.y) + 4);
+        ctx.fillStyle = "rgba(20,23,32,.9)"; ctx.fillRect(V.x - 2, Math.max(V.y, WH), V.w + 4, V.h + 4);
+      }
+      ctx.fillStyle = port ? "#2a241c" : "#e3d6bb"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4);
       // 背景：有 bg_battle 用它（只加很轻的暗角）；没有则退回压淡的店内背景；再没有就纯色
       // M4：战斗配置可指定 bg（如夜市 bg_market），缺图时用 bgFallback 的代码占位
       var bgb, bg;
@@ -377,9 +410,9 @@
       if (!bgb) { ctx.fillStyle = "rgba(243,234,214,.55)"; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4); }
       var g = ctx.createRadialGradient(WW / 2, WH * .62, 260, WW / 2, WH * .62, 950);
       g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, bgb ? "rgba(30,20,10,.28)" : "rgba(30,20,10,.55)"); ctx.fillStyle = g; ctx.fillRect(V.x - 2, V.y - 2, V.w + 4, V.h + 4);
-      ctx.strokeStyle = bgb ? "rgba(43,38,34,.22)" : "rgba(43,38,34,.35)"; ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(201,164,92,.28)"; ctx.lineWidth = 3;   // M15：擂台线金淡色
       ctx.beginPath(); ctx.ellipse(WW / 2 + 60, 740, 620, 190, 0, 0, Math.PI * 2); ctx.stroke();
-      st.units.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (u) { drawUnit(u, dt); });
+      st.units.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (u) { drawUnit(u, dt, dtR); });
       st.fx = st.fx.filter(function (f) { return (f.t += dt) < f.dur; });
       st.fx.forEach(function (f) {
         var r = S.get(f.name); if (!r) return;
@@ -388,9 +421,10 @@
         ctx.drawImage(r.img, -r.meta.ax * sc, -r.meta.ay * sc, r.meta.w * sc, r.meta.h * sc);
         ctx.restore();
       });
-      st.floats = st.floats.filter(function (f) { return (f.t += dt) < 1.3; });
+      st.floats = st.floats.filter(function (f) { return (f.t += dt) < (f.life || 1.3); });
       st.floats.forEach(function (f) {
-        var k = f.t / 1.3;
+        var k = f.t / (f.life || 1.3);
+        if (FX && f.st) { FX.drawFloat(ctx, f, k); return; }
         ctx.save(); ctx.globalAlpha = 1 - Math.max(0, k - .6) / .4;
         ctx.font = "bold " + f.size + "px KaiTi, 'Noto Serif CJK SC', serif"; ctx.textAlign = "center";
         var ic = f.icon && S.get(f.icon);
@@ -410,7 +444,9 @@
       if (!st) return null;
       return { round: st.round, turn: st.turn, actor: actor() && actor().id, busy: st.busy, result: st.result, picking: !!st.picking,
         order: st.order.map(function (u) { return u.id; }), items: JSON.parse(JSON.stringify(st.items)), log: st.log.slice(),
-        floats: st.floats.map(function (f) { return f.text; }), floatIcons: st.floats.filter(function (f) { return f.icon; }).map(function (f) { return f.icon; }),
+        floats: st.floats.map(function (f) { return f.text; }), floatKinds: st.floats.map(function (f) { return f.kind || "text"; }),
+        flash: st.units.filter(function (u) { return window.BattleFX && window.BattleFX.flashing(u); }).map(function (u) { return u.id; }),
+        ghosts: st.units.filter(function (u) { return u.fxGhost && u.fxGhost.list.length; }).map(function (u) { return [u.id, u.fxGhost.list.length]; }), floatIcons: st.floats.filter(function (f) { return f.icon; }).map(function (f) { return f.icon; }),
         fx: st.fx.map(function (f) { return f.name; }), fxCount: JSON.parse(JSON.stringify(st.fxCount)), bg: st.cfg.bg ? (S.get(st.cfg.bg) ? st.cfg.bg : (st.cfg.bgFallback || "none")) : (S.get("bg_battle") ? "bg_battle" : (S.get("bg_room") ? "bg_room" : "none")), id: st.id,
         view: st.view ? { x: st.view.x, y: st.view.y, w: st.view.w, h: st.view.h, k: st.view.k } : null,
         units: st.units.map(function (u) { return { id: u.id, name: u.name, side: u.side, hp: u.hp, hpMax: u.hpMax, mp: u.mp, mpMax: u.mpMax, spd: u.spd, defending: u.defending, x: u.x, y: u.y, h: unitHeight(u), sprite: !!(u.sprite && S.get(u.sprite)) }; }) };
