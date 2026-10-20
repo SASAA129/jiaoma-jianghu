@@ -95,3 +95,4 @@
 - 2026-10-20 09:51 已 publish（含 duel 背景）；等 Pages 后 verify
 - 2026-10-20 10:03 verify_online.py 151/151 全过（含 /m13/ /m14/ 未变、duel 背景、打击感冒烟）；基线 md5 470 全过；战斗返工第一步完成
 - 2026-10-20 11:07 竖屏镜头留白：bview 加 guardOrderGap（最高单位含名牌上沿距出手顺序条底 ≥40 舞台 px，不够自动下让），6 机型实测最小 386.7；五场章节战斗删 bg/bgFallback 统一走对峙图 bg_battle_duel_flat（场景图保留供探索）；全量自测 672/672（分两批），对比图 m15_ch_battles_duel.png；接着 zip/publish/verify
+- 2026-10-20 11:09 发布：竖屏留白 + 五场章节战对峙背景（用户指定 commit 文案）
