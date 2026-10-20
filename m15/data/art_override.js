@@ -3,6 +3,13 @@
 //   也可以手改。flat 图的 w/h/ax/ay（道具切图后尺寸、锚点）由工具写进 meta；底图尺寸构图同旧图（1536×1024）。
 //   运行时 js/art_override.js 只改 ASSETS[key] 的 src（和 meta），不发探测请求，所以没有 404。
 window.ART_OVERRIDE = {
+ "bg_battle": {
+  "use": "flat",
+  "old": "assets/bg_battle.png",
+  "flat": "assets/bg_battle_duel_flat.png",
+  "art": "art/ch7/bg_battle_duel_flat.png",
+  "name": "战斗背景 · 对峙平涂（用户批准接入）"
+ },
  "bg_market": {
   "use": "flat",
   "old": "assets/bg_market.png",

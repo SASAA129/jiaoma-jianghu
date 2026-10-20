@@ -90,3 +90,5 @@
 
 - $(date '+%Y-%m-%d %H:%M') 战斗打击感五件套 + ui_battle_wuxia.css + README 四处画布改动完成；自测 49/49；基线 md5 470 全过；接着 zip / publish / verify
 - 2026-10-20 09:48 战斗打击感五件套 + ui_battle_wuxia.css + README 四处画布改动完成；自测 49/49；基线 md5 470 全过；接着 zip / publish / verify
+- 2026-10-20 09:48 已 publish（打击感 + 武侠夜色战斗界面）；等待 Pages 后跑 verify_online.py
+- 2026-10-20 09:51 接入战斗背景 bg_battle_duel_flat.png（覆盖表，未动锁定 bg_battle_flat）；打击感自测 52/52；接着 zip/publish/verify
