@@ -409,7 +409,7 @@
     M.props.filter(visible).forEach(function (pr) {
       var r = S.get(pr.sprite); if (!r || res || walkable(c.x, c.y)) return;
       var fw = (pr.w + pr.h) * M.tileW / 2, k = fw / r.meta.w * (pr.scale || 1) * (r.meta.dispScale || 1), v = G(pr.x + pr.w, pr.y + pr.h);
-      if (inRect(p, { x: v.x - r.meta.ax * k, y: v.y - (r.meta.ay || r.meta.h) * k, w: r.meta.w * k, h: r.meta.h * k })) res = interactable(pr.id);
+      if (inRect(p, { x: v.x - r.meta.ax * k + (pr.offX || 0), y: v.y - (r.meta.ay || r.meta.h) * k + (pr.offY || 0), w: r.meta.w * k, h: r.meta.h * k })) res = interactable(pr.id);   // M15：热区与贴图同带 offX/offY
     });
     return res;
   }

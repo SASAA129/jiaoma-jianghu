@@ -96,3 +96,5 @@
 - 2026-10-20 10:03 verify_online.py 151/151 全过（含 /m13/ /m14/ 未变、duel 背景、打击感冒烟）；基线 md5 470 全过；战斗返工第一步完成
 - 2026-10-20 11:07 竖屏镜头留白：bview 加 guardOrderGap（最高单位含名牌上沿距出手顺序条底 ≥40 舞台 px，不够自动下让），6 机型实测最小 386.7；五场章节战斗删 bg/bgFallback 统一走对峙图 bg_battle_duel_flat（场景图保留供探索）；全量自测 672/672（分两批），对比图 m15_ch_battles_duel.png；接着 zip/publish/verify
 - 2026-10-20 11:09 发布：竖屏留白 + 五场章节战对峙背景（用户指定 commit 文案）
+- 2026-10-21 09:45 夜市三摊平涂定稿接入：assets/prop_stall_{1,2,3}_flat.png（= art/locked/m15/stalls = art/ch7），覆盖表 + apply_flat_art ALIAS/ANCHOR/DISP，锚点底部中点、显示倍率 1.0（宽同旧图，高 ×0.979/1.003/1.009）；game.js 道具贴图热区补 offX/offY；新自测 tools/selftest_m15_stalls.py 57/57；基线追加 6 行（470→476），清单 m13work/locked_m15_stalls_md5.txt；M15 本身未锁；接着全量自测
+- 2026-10-21 10:16 全量 selftest_m15.py 737/737（含三摊 57 项）；接着 zip/publish/verify

@@ -72,5 +72,47 @@ window.ART_OVERRIDE = {
    "ay": 846,
    "dispScale": 0.88
   }
+ },
+ "prop_stall_1": {
+  "use": "flat",
+  "old": "assets/prop_stall_1.png",
+  "flat": "assets/prop_stall_1_flat.png",
+  "art": "art/locked/m15/stalls/prop_stall_1_flat.png",
+  "name": "第二章 夜市古玩摊（平涂定稿，用户已锁定）",
+  "meta": {
+   "w": 830,
+   "h": 950,
+   "ax": 415,
+   "ay": 950,
+   "dispScale": 1.0
+  }
+ },
+ "prop_stall_2": {
+  "use": "flat",
+  "old": "assets/prop_stall_2.png",
+  "flat": "assets/prop_stall_2_flat.png",
+  "art": "art/locked/m15/stalls/prop_stall_2_flat.png",
+  "name": "第二章 夜市灯谜摊（平涂定稿，用户已锁定）",
+  "meta": {
+   "w": 852,
+   "h": 919,
+   "ax": 426,
+   "ay": 919,
+   "dispScale": 1.0
+  }
+ },
+ "prop_stall_3": {
+  "use": "flat",
+  "old": "assets/prop_stall_3.png",
+  "flat": "assets/prop_stall_3_flat.png",
+  "art": "art/locked/m15/stalls/prop_stall_3_flat.png",
+  "name": "第二章 夜市炒锅摊（平涂定稿，用户已锁定）",
+  "meta": {
+   "w": 769,
+   "h": 918,
+   "ax": 384.5,
+   "ay": 918,
+   "dispScale": 1.0
+  }
  }
 };
