@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>跑酷火锅店 v0</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="390" height="844"></canvas>
+    <div id="ui-hud" class="hidden">
+      <div class="hud-row">
+        <span id="score">分 0</span>
+        <span id="timer">0s</span>
+        <span id="combo">连击 0</span>
+      </div>
+      <div id="hp" aria-label="体力">❤️❤️❤️</div>
+    </div>
+    <div id="overlay" class="screen">
+      <div class="card">
+        <h1>🍜 跑酷火锅店</h1>
+        <p class="sub">竖屏三车道 · 一局约 60–90 秒</p>
+        <ul class="tips">
+          <li>👉 左右滑 / 点半屏换道</li>
+          <li>🥬 接菜 +10 · 🧧 红包 +50</li>
+          <li>😱 催账 -2 体力 · 🍲🪑 汤/板凳 -1</li>
+          <li>连续 5 次接到不撞 → 下次 ×1.5</li>
+        </ul>
+        <button id="btn-start" type="button">开跑</button>
+      </div>
+    </div>
+    <div id="result" class="screen hidden">
+      <div class="card">
+        <h1 id="result-title">结算</h1>
+        <div id="stars" class="stars">☆☆☆</div>
+        <p id="result-score" class="big">0 分</p>
+        <p id="result-detail" class="sub"></p>
+        <button id="btn-retry" type="button">再来一局</button>
+      </div>
+    </div>
+  </div>
+  <script src="js/game.js"></script>
+</body>
+</html>
