@@ -1,0 +1,80 @@
+/* M13 探索栏小修（不改设计稿 ui_wuxia.css，只在手机尺寸上修正）
+   问题：探索栏在舞台里按 1536 舞台 px 写，手机上整体被缩到约 0.4 倍，条目只有 26 CSS px 高（< 48 热区）；
+        竖屏时压在满掌柜头顶，挡住点 NPC；对话时还会盖住对话框。
+   做法：手机上用「CSS px ÷ 舞台缩放」换算尺寸，让条目 / 路线行在屏幕上 ≥48px、字 ≥14px；
+        横屏：贴右侧、在地名/地图钮下方、底部菜单上方，宽 210px，超出可滑动；
+        竖屏：改成底部菜单上方的横向可滑动卡片条（不再压 NPC 头顶），走近能交谈时让位给「交谈」大钮；
+        对话 / 面板打开时整栏让位。配色、菱形、「近」章、A/B/C 圆章都沿用设计稿。 */
+@media (max-width: 900px), (max-height: 600px) {
+  html.m12-hud { --u: calc(1px / var(--stage-scale, 1)); }
+  html.m12-hud body #stage #explore.panel {
+    transform: none !important;
+    width: calc(210 * var(--u)); right: calc(max(10px, env(safe-area-inset-right)) / var(--stage-scale, 1)); left: auto;
+    top: calc(84 * var(--u)); bottom: auto;
+    max-height: calc((100vh - 168px) / var(--stage-scale, 1)); overflow-y: auto; overflow-x: hidden;
+    padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));
+    scrollbar-width: none; overscroll-behavior: contain;
+  }
+  html.m12-hud body #stage #explore .panel-title {
+    font-size: calc(15 * var(--u)); letter-spacing: calc(8 * var(--u)); text-indent: calc(8 * var(--u));
+    margin: 0 0 calc(2 * var(--u)); padding: 0 0 calc(6 * var(--u)); line-height: calc(22 * var(--u));
+  }
+  html.m12-hud body #stage #explore li {
+    min-height: calc(48 * var(--u)); line-height: calc(48 * var(--u)); font-size: calc(15 * var(--u));
+    padding: 0 calc(8 * var(--u)) 0 calc(26 * var(--u)); letter-spacing: 0;
+  }
+  html.m12-hud body #stage #explore li.near { padding-right: calc(30 * var(--u)); }
+  html.m12-hud body #stage #explore li::before {
+    left: calc(9 * var(--u)); width: calc(9 * var(--u)); height: calc(9 * var(--u)); margin-top: calc(-5 * var(--u));
+  }
+  html.m12-hud body #stage #explore li.near::after {
+    font-size: calc(14 * var(--u)); padding: calc(3 * var(--u)) calc(4 * var(--u)); right: calc(4 * var(--u));
+  }
+  html.m12-hud body #stage #explore #routes { margin-top: calc(4 * var(--u)); padding-top: calc(4 * var(--u)); }
+  html.m12-hud body #stage #explore #routes .ch-name { font-size: calc(14 * var(--u)); letter-spacing: calc(2 * var(--u)); line-height: calc(24 * var(--u)); }
+  html.m12-hud body #stage #explore #routes .route {
+    font-size: calc(14 * var(--u)); line-height: calc(48 * var(--u)); min-height: calc(48 * var(--u)); padding: 0 calc(2 * var(--u));
+  }
+  html.m12-hud body #stage #explore #routes .rk {
+    width: calc(22 * var(--u)); height: calc(22 * var(--u)); line-height: calc(20 * var(--u)); font-size: calc(14 * var(--u)); margin-right: calc(6 * var(--u));
+  }
+  html.m12-hud body #stage #explore #routes .cur, html.m12-hud body #stage #explore #routes .done-seal {
+    font-size: calc(14 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); margin-left: calc(4 * var(--u));
+  }
+  /* 对话 / 面板 / 战斗等打开时让位，不压对话框 */
+  html.m12-hud body:has(#hud.talking) #stage #explore.panel,
+  html.m12-hud body:has(#hud-panel:not(.hidden)) #stage #explore.panel { display: none; }
+}
+/* 竖屏手机：底部菜单上方的横向卡片条 */
+@media (orientation: portrait) and (max-width: 900px) {
+  html.m12-hud body #stage #explore.panel {
+    left: calc(max(8px, env(safe-area-inset-left)) / var(--stage-scale, 1)); right: calc(max(8px, env(safe-area-inset-right)) / var(--stage-scale, 1));
+    width: auto; top: auto;
+    bottom: calc((78px + env(safe-area-inset-bottom)) / var(--stage-scale, 1));
+    max-height: none; overflow: hidden;
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center;
+    column-gap: calc(6 * var(--u)); row-gap: calc(2 * var(--u));
+    padding: calc(4 * var(--u)) calc(6 * var(--u));
+  }
+  html.m12-hud body #stage #explore .panel-title {
+    grid-row: 1 / span 2; writing-mode: vertical-rl; letter-spacing: calc(4 * var(--u)); text-indent: 0;
+    padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)); margin: 0;
+    background-size: 1px 100%; background-position: left; line-height: 1.2;
+  }
+  html.m12-hud body #stage #explore #explore-list, html.m12-hud body #stage #explore #routes {
+    display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; gap: calc(6 * var(--u)); margin: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.m12-hud body #stage #explore #explore-list::-webkit-scrollbar, html.m12-hud body #stage #explore #routes::-webkit-scrollbar { display: none; }
+  html.m12-hud body #stage #explore li {
+    flex: none; border: 1px solid rgba(201,164,92,.35); border-radius: calc(3 * var(--u)); max-width: calc(170 * var(--u));
+    padding: 0 calc(10 * var(--u)) 0 calc(24 * var(--u));
+  }
+  html.m12-hud body #stage #explore li.near { padding-right: calc(30 * var(--u)); }
+  html.m12-hud body #stage #explore #routes { border-top: 0; padding-top: 0; }
+  html.m12-hud body #stage #explore #routes .ch-name { flex: none; align-self: center; }
+  html.m12-hud body #stage #explore #routes .route { flex: none; padding-right: calc(8 * var(--u)); }
+  html.m12-hud body #stage #explore #objective { display: none; }
+  /* 走近 NPC 出现「交谈」大钮时让位（交谈钮在底部中间） */
+  html.m12-hud body:has(#hud .hud-talk:not(.hidden)) #stage #explore.panel { display: none; }
+}
