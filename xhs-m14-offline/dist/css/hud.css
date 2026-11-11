@@ -1,0 +1,157 @@
+/* M12 手机界面：少挡、≥48px、横竖屏、交谈钮、安全区 */
+:root {
+  --sl: max(10px, env(safe-area-inset-left));
+  --sr: max(10px, env(safe-area-inset-right));
+  --st: max(8px, env(safe-area-inset-top));
+  --sb: max(10px, env(safe-area-inset-bottom));
+  --rb: 56px; /* 默认「更大」≥48 */
+  --talk: 72px;
+}
+html.hud-btn-std { --rb: 48px; --talk: 64px; }
+html.hud-btn-large { --rb: 56px; --talk: 72px; }
+
+.m12-hud #menu-btns, .m12-hud #party, .m12-hud #explore #objective { display: none !important; }
+.m12-hud #topbar { display: none !important; }
+.m12-hud #explore #reset-save, .m12-hud #explore #rig-toggle, .m12-hud #explore .hint { display: none !important; }
+.m12-hud #stage #explore { top: 200px; max-height: 560px; overflow-y: auto; }
+.m12-hud #stage.scene-river #explore,
+.m12-hud #stage.scene-market #explore,
+.m12-hud #stage.scene-village #explore,
+.m12-hud #stage.scene-hq #explore { top: 420px; max-height: 480px; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 40; font-family: "Noto Serif CJK SC", "Songti SC", serif; color: #f3e7ce; -webkit-user-select: none; user-select: none; }
+#hud.off { display: none; }
+#hud button { pointer-events: auto; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#hud button:active { transform: scale(.94); }
+
+/* 左上 */
+.hud-tl { position: absolute; left: var(--sl); top: var(--st); display: flex; align-items: center; pointer-events: auto; z-index: 2; }
+.hud-avatar { position: relative; width: 56px; height: 56px; flex: none; min-width: 48px; min-height: 48px; }
+.hud-avatar canvas { position: absolute; left: 4px; top: 4px; width: 48px; height: 48px; border-radius: 50%; }
+.hud-frame { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: cover; object-position: left; clip-path: circle(50%); }
+.hud-stat { margin-left: -4px; padding: 4px 10px 5px 12px; background: rgba(40, 30, 24, .72); border: 2px solid #7a5434; border-left: 0; border-radius: 0 12px 12px 0; min-width: 120px; }
+.hud-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.hud-bar { position: relative; height: 14px; margin-top: 3px; background: rgba(0, 0, 0, .45); border-radius: 8px; overflow: hidden; }
+.hud-bar i { position: absolute; left: 0; top: 0; bottom: 0; }
+.hud-bar.hp i { background: linear-gradient(#e0574a, #a8281f); }
+.hud-bar.mp i { background: linear-gradient(#5b9be0, #2a5fa8); }
+.hud-bar span { position: relative; display: block; font-size: 14px; line-height: 14px; text-align: center; font-family: system-ui, sans-serif; text-shadow: 0 1px 2px #000; }
+
+/* 任务：默认一行短条，点开展开 */
+.hud-track {
+  position: absolute; left: var(--sl); top: calc(var(--st) + 66px); max-width: min(220px, 46vw);
+  padding: 6px 12px; min-height: 48px; text-align: left;
+  background: rgba(40, 30, 24, .55); border-left: 4px solid #b23026; border-radius: 0 10px 10px 0;
+  pointer-events: auto; z-index: 2;
+}
+.hud-track-t { font-size: 14px; color: #e8b46a; letter-spacing: 1px; }
+.hud-track-x {
+  font-size: 14px; line-height: 1.3; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
+}
+#hud.track-open .hud-track { background: rgba(40, 30, 24, .82); max-width: min(280px, 70vw); }
+#hud.track-open .hud-track-x { white-space: normal; }
+
+/* 右上 */
+.hud-tr { position: absolute; right: var(--sr); top: var(--st); display: flex; align-items: center; gap: 8px; z-index: 2; }
+.hud-loc { font-size: 14px; padding: 6px 12px; background: rgba(40, 30, 24, .65); border-radius: 14px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-loc em { font-style: normal; font-size: 14px; color: #e8b46a; margin-left: 8px; }
+.hud-map, .hud-rb, .hud-fab { position: relative; width: var(--rb); height: var(--rb); flex: none; min-width: 48px; min-height: 48px; }
+.hud-map img, .hud-rb img, .hud-fab img { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); opacity: .72; }
+.hud-map:active img, .hud-rb:active img, .hud-fab:active img, #hud.menu-open .hud-rb img { opacity: 1; }
+.hud-map span, .hud-rb span, .hud-fab-lab {
+  position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
+  font-size: 14px; line-height: 1; padding: 2px 6px; white-space: nowrap;
+  background: rgba(40, 30, 24, .85); border-radius: 8px;
+}
+
+/* 右下：半透明圆钮 + 可收成一个菜单浮钮 */
+.hud-br { position: absolute; right: var(--sr); bottom: calc(var(--sb) + 6px); display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 8px; z-index: 3; }
+.hud-br-row { display: none; gap: 8px; align-items: flex-end; }
+#hud.menu-open .hud-br-row { display: flex; }
+#hud.menu-open .hud-fab-lab { display: none; }
+#hud:not(.menu-open) .hud-fab img { opacity: 1; }
+
+/* 交谈大按钮：底中拇指区 */
+.hud-talk {
+  position: absolute; left: 50%; bottom: calc(var(--sb) + 10px); transform: translateX(-50%);
+  width: var(--talk); height: var(--talk); min-width: 64px; min-height: 64px;
+  z-index: 4; pointer-events: auto;
+}
+.hud-talk img { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 6px rgba(0,0,0,.45)); }
+.hud-talk span {
+  position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+  font-size: 14px; white-space: nowrap; padding: 3px 10px;
+  background: rgba(40, 30, 24, .9); border-radius: 10px; border: 1px solid #b23026;
+}
+.hud-talk.hidden { display: none !important; }
+/* 菜单展开时上移交谈钮，避免盖住左展的圆钮 */
+#hud.menu-open .hud-talk { bottom: calc(var(--sb) + 78px); }
+
+/* 对话时进一步收起 */
+#hud.talking .hud-br, #hud.talking .hud-track, #hud.talking .hud-tr .hud-map, #hud.talking .hud-talk { display: none !important; }
+#hud.talking .hud-tl { opacity: .4; }
+#hud.talking .hud-loc { opacity: .55; }
+
+/* 设置：收起 HUD —— 只留菜单浮钮 + 交谈 */
+#hud.hud-collapsed .hud-tl,
+#hud.hud-collapsed .hud-track,
+#hud.hud-collapsed .hud-tr .hud-loc,
+#hud.hud-collapsed .hud-tr .hud-map,
+#hud.hud-collapsed .hud-br-row { display: none !important; }
+#hud.hud-collapsed .hud-br { /* 只留 fab */ }
+#hud.hud-collapsed.menu-open .hud-br-row { display: flex !important; } /* 点开菜单仍可展开 */
+
+/* ===== 竖屏：底栏菜单 + 顶栏精简 ===== */
+@media (orientation: portrait) {
+  .hud-tl { top: var(--st); }
+  .hud-stat { min-width: 100px; }
+  .hud-track { top: calc(var(--st) + 62px); max-width: min(70vw, 260px); }
+  .hud-tr { top: var(--st); }
+  .hud-loc { max-width: 42vw; font-size: 14px; }
+  /* 底栏一排 */
+  .hud-br {
+    left: var(--sl); right: var(--sr); bottom: var(--sb);
+    justify-content: center; flex-direction: row; gap: 6px;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(18, 12, 8, .72); border-top: 1px solid rgba(122, 84, 52, .5);
+    border-radius: 16px 16px 0 0;
+  }
+  .hud-br-row { display: flex !important; flex: 1; justify-content: space-around; gap: 4px; }
+  .hud-fab { display: none !important; } /* 竖屏直接铺开六钮 */
+  #hud:not(.menu-open) .hud-br-row { display: flex !important; }
+  .hud-talk { bottom: calc(var(--sb) + 78px); }
+  #hud.talking .hud-br { display: none !important; }
+  .m12-hud #stage #explore { top: 280px; max-height: 40vh; }
+  .m12-hud #stage.scene-river #explore { top: 280px; max-height: 36vh; }
+}
+
+/* 面板 */
+#hud-panel { position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: var(--st) var(--sr) var(--sb) var(--sl); }
+#hud-panel.hidden { display: none; }
+.hp-box { width: min(640px, 100%); max-height: 100%; display: flex; flex-direction: column; color: #3b2a1e; background: #f5ecd7; border: 6px solid #7a5434; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.5); font-family: "Noto Serif CJK SC", serif; }
+.hp-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 4px 16px; border-bottom: 2px solid #b23026; font-size: 18px; font-weight: 700; letter-spacing: 4px; }
+.hp-close { width: 48px; height: 48px; font-size: 22px; border: 0; background: none; color: #7a5434; cursor: pointer; }
+.hp-body { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; padding: 8px 16px 14px; font-size: 15px; line-height: 1.5; }
+.hp-body h3 { font-size: 16px; color: #b23026; margin: 6px 0 4px; }
+.hp-row { padding: 10px 0; border-bottom: 1px dashed #cdb894; min-height: 48px; box-sizing: border-box; }
+.hp-row b { display: block; font-size: 15px; } .hp-row small { display: block; font-size: 14px; color: #6b5642; }
+.hp-row.done b { color: #8a8a7a; text-decoration: line-through; }
+.hp-empty { color: #8a7560; font-size: 15px; text-align: center; padding: 18px 0; }
+.hp-note { font-size: 14px; color: #8a7560; margin-top: 8px; }
+.hp-goal { font-size: 16px; font-weight: 700; } .hp-via { font-size: 14px; color: #b23026; }
+.hp-party { display: grid; gap: 8px; }
+.hp-mem { display: flex; gap: 10px; align-items: center; padding: 8px; border: 2px solid #d9c7a4; border-radius: 10px; }
+.hp-mem.lead { border-color: #b23026; }
+.hp-mem canvas { width: 64px; height: 64px; border-radius: 50%; flex: none; background: #e9dcc0; }
+.hp-mem-x { flex: 1; min-width: 0; }
+.hp-mem-x b { font-size: 16px; } .hp-mem-x em { font-style: normal; font-size: 14px; color: #fff; background: #b23026; border-radius: 6px; padding: 0 6px; margin-left: 6px; }
+.hp-mem .hud-bar { height: 16px; margin-top: 4px; background: #5a4a3a; border-radius: 8px; position: relative; overflow: hidden; }
+.hp-mem .hud-bar i { position: absolute; left: 0; top: 0; bottom: 0; } .hp-mem .hud-bar.hp i { background: #c23b2e; } .hp-mem .hud-bar.mp i { background: #3d78c2; }
+.hp-mem .hud-bar span { position: relative; display: block; text-align: center; font-size: 14px; line-height: 16px; color: #fff; font-family: system-ui, sans-serif; }
+.hp-nums { display: flex; gap: 12px; font-size: 14px; margin-top: 4px; }
+.hp-btn { min-width: 88px; min-height: 48px; margin-top: 6px; font: inherit; font-size: 15px; color: #f5ecd7; background: #7a5434; border: 0; border-radius: 10px; cursor: pointer; touch-action: manipulation; }
+.hp-btn.wide { display: block; width: 100%; margin: 8px 0; } .hp-btn.danger { background: #a8281f; }
+@media (hover: hover) { .hp-btn:hover { filter: brightness(1.1); } }
+
+.hud-talk img, .hud-rb img, .hud-fab img, .hud-map img, .hud-avatar img, .hud-avatar canvas { pointer-events: none; }

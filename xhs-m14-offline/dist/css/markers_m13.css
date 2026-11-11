@@ -1,0 +1,17 @@
+/* M13 名字牌手机补丁（设计稿 css/markers.css 原样引用，本文件只补我们的标准）
+   - 点击区 ≥48×48 CSS px（设计稿建议 44，取大者）：透明 padding 撑开，牌子本身外观不变
+   - 字 ≥13px：物件牌 12px → 13px
+   - 层级：在 HUD（z 40）之下，HUD 按钮永远压在牌子上面；面板 / 对话框 / 战斗时整层隐藏（js 控制）
+   - 右侧探索栏 / 竖屏卡片条彻底不显示（DOM 留着给存档按钮等旧逻辑，不可见、不可点） */
+#explore, .m12-hud #explore, html.m12-hud body #stage #explore.panel { display: none !important; }
+#wx-markers { position: fixed; inset: 0; pointer-events: none; z-index: 39; }
+#wx-markers.mk-hidden { display: none; }
+#wx-markers .wx-mk { z-index: 39; min-width: 48px; min-height: 48px; box-sizing: border-box; justify-content: flex-end;
+  padding: 4px 2px 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+#wx-markers .wx-mk.mk-off { display: none; }
+#wx-markers .wx-mk.prop .tag { font-size: 13px; }
+#wx-markers .wx-mk .tag { pointer-events: none; }
+#wx-markers .wx-mk[class*="edge-"] { padding-bottom: 4px; }
+/* 设计稿里 .prop .tag 写在 .target .tag 之后，物件当目标时金底被盖掉 → 这里补回「目标 = 金底」 */
+#wx-markers .wx-mk.target.prop .tag { color: #1E1F26; background: linear-gradient(#E3C27A, #C9A45C); border-color: #8E6D31; font-weight: 600; font-size: 14px; }
+#wx-markers .wx-mk.target.prop .gem { width: 9px; height: 9px; background: #E3C27A; }

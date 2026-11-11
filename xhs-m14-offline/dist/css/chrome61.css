@@ -1,0 +1,191 @@
+/* Chrome 61 基线。原样式表里的 gap / min() / max() / inset / :has() / dvh 仍留给新内核；
+   这里只补会被 Chrome 61 整段丢掉的声明。检测到 Flex gap 真正生效后，去掉补上的外边距，避免叠两层间距。 */
+
+:root {
+  --sl: 10px;
+  --sr: 10px;
+  --st: 8px;
+  --sb: 10px;
+}
+@supports (width: max(1px, 2px)) {
+  :root {
+    --sl: max(10px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+    --sr: max(10px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+    --st: max(8px, var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+    --sb: max(10px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+html { touch-action: manipulation; }
+body { -webkit-touch-callout: none; }
+html, body { height: 100%; min-height: 100vh; }
+
+#hud, #hud-panel, #wx-markers,
+#battle .bt-result, #cg-card, #worldmap, #worldmap .wm-cv {
+  top: 0; right: 0; bottom: 0; left: 0;
+}
+#worldmap .wm-nodes { top: auto; right: auto; bottom: auto; left: auto; }
+
+.hp-box, #hud-panel .hp-box { width: 100%; max-width: 640px; }
+.hud-track { max-width: 220px; }
+#hud.track-open .hud-track { max-width: 280px; }
+.cg-img { max-width: 96vw; }
+#dialog.uf-screen { left: 16px; right: 16px; }
+#fs-chip { top: 10px; }
+#rotate-hint { padding: 10px 14px; }
+
+@supports (width: min(1px, 2px)) {
+  .hud-track { max-width: min(220px, 46vw); }
+  #hud.track-open .hud-track { max-width: min(280px, 70vw); }
+  .cg-img { max-width: min(1536px, 96vw); }
+}
+@supports (left: max(1px, 2px)) {
+  #dialog.uf-screen {
+    left: max(16px, var(--sl));
+    right: max(16px, var(--sr));
+  }
+  #fs-chip { top: max(10px, var(--safe-area-inset-top, env(safe-area-inset-top, 0px))); }
+  #rotate-hint { padding-top: max(10px, var(--safe-area-inset-top, env(safe-area-inset-top, 0px))); }
+}
+@media (orientation: portrait) {
+  .hud-track { max-width: 260px; }
+  #dialog.uf-screen { left: var(--sl); right: var(--sr); }
+  #hud .hud-rb { width: 48px; height: 48px; }
+}
+@supports (width: min(1px, 2px)) {
+  @media (orientation: portrait) {
+    .hud-track { max-width: min(70vw, 260px); }
+    #hud .hud-rb {
+      width: max(48px, min(var(--rb), calc((100vw - 48px) / 6)));
+      height: max(48px, min(var(--rb), calc((100vw - 48px) / 6)));
+    }
+  }
+}
+
+@media (max-width: 900px), (max-height: 600px) {
+  html.m12-hud body #stage #explore.panel {
+    right: calc(10px / var(--stage-scale, 1));
+  }
+}
+@supports (width: max(1px, 2px)) {
+  @media (max-width: 900px), (max-height: 600px) {
+    html.m12-hud body #stage #explore.panel {
+      right: calc(max(10px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px))) / var(--stage-scale, 1));
+    }
+  }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  html.m12-hud body #stage #explore.panel {
+    left: calc(8px / var(--stage-scale, 1));
+    right: calc(8px / var(--stage-scale, 1));
+    bottom: calc(78px / var(--stage-scale, 1));
+    grid-column-gap: calc(6 * var(--u));
+    grid-row-gap: calc(2 * var(--u));
+  }
+  html.m12-hud body #stage #explore #explore-list > * + *,
+  html.m12-hud body #stage #explore #routes > * + * { margin-left: calc(6 * var(--u)); }
+}
+@supports (bottom: env(safe-area-inset-bottom)) {
+  @media (orientation: portrait) and (max-width: 900px) {
+    html.m12-hud body #stage #explore.panel {
+      left: calc(max(8px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px))) / var(--stage-scale, 1));
+      right: calc(max(8px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px))) / var(--stage-scale, 1));
+      bottom: calc((78px + env(safe-area-inset-bottom)) / var(--stage-scale, 1));
+    }
+  }
+}
+
+/* Grid：Chrome 61 认 grid-gap，不认 gap 简写 */
+#panel .pn-grid { grid-gap: 14px; }
+#panel .pn-cols, .fn-cols { grid-gap: 30px; }
+.pn-ach { grid-gap: 6px; }
+.em-grid { grid-gap: 14px; }
+.hp-party { grid-gap: 8px; }
+#dialog .options, #dialog.uf-screen .options { grid-gap: 10px; }
+
+/* Flex 间距基线（子项单边外边距） */
+#party > * + * { margin-left: 10px; }
+.pcard > * + * { margin-left: 8px; }
+#menu-btns > * + * { margin-left: 10px; }
+#dialog .scroll > * + * { margin-left: 22px; }
+#dialog.uf-screen .scroll > * + * { margin-left: 16px; }
+#editor .ed-row > * + * { margin-left: 6px; }
+#ending .ec-paper > * + * { margin-left: 36px; }
+#ending .ec-btns > * + * { margin-left: 16px; }
+#battle .bt-order > * + * { margin-left: 10px; }
+#battle .bt-order-list > * + * { margin-left: 8px; }
+#battle .bt-cmd > * + *, #battle .bt-sub > * + * { margin-left: 14px; }
+#battle .bt-sub button.has-icon > * + * { margin-left: 12px; }
+#gain > * + * { margin-left: 16px; }
+#panel .pn-item > * + * { margin-left: 14px; }
+#panel .pn-mem > * + * { margin-left: 18px; }
+.pn-titles > * + * { margin-left: 8px; }
+#bigcard .bc-btns > * + * { margin-left: 16px; }
+#minigame .mg-head > * + * { margin-left: 16px; }
+.em-wrap > * + * { margin-left: 30px; }
+.cb-full > * + * { margin-left: 30px; }
+.wm-legend > * + * { margin-left: 26px; }
+.wm-legend span > * + * { margin-left: 8px; }
+#hud .hud-tr > * + * { margin-left: 8px; }
+#hud .hud-tl > * + * { margin-left: 8px; }
+#hud .hud-br > * + *, #hud .hud-br-row > * + * { margin-left: 20px; }
+#fs-chip > * + * { margin-left: 8px; }
+#hud-panel .hp-route > * + * { margin-left: 8px; }
+.hp-mem > * + * { margin-left: 10px; }
+.hp-nums > * + * { margin-left: 12px; }
+#rotate-hint::before { margin-right: 10px; }
+
+#battle .bt-status > * + * { margin-top: 8px; }
+.st-grid .st-opt > * + * { margin-top: 4px; }
+#title-menu .tm-btns > * + * { margin-top: 14px; }
+#panel .pn-party > * + * { margin-top: 14px; }
+.du-opts > * + * { margin-top: 10px; }
+
+@media (orientation: portrait) {
+  #dialog.uf-screen .scroll > * + * { margin-left: 12px; }
+  #hud .hud-br-row > * + * { margin-left: 4px; }
+}
+
+html.m12-hud body.xhs-hide-explore #stage #explore.panel { display: none; }
+
+html.supports-flex-gap #party > * + *,
+html.supports-flex-gap .pcard > * + *,
+html.supports-flex-gap #menu-btns > * + *,
+html.supports-flex-gap #dialog .scroll > * + *,
+html.supports-flex-gap #dialog.uf-screen .scroll > * + *,
+html.supports-flex-gap #editor .ed-row > * + *,
+html.supports-flex-gap #ending .ec-paper > * + *,
+html.supports-flex-gap #ending .ec-btns > * + *,
+html.supports-flex-gap #battle .bt-order > * + *,
+html.supports-flex-gap #battle .bt-order-list > * + *,
+html.supports-flex-gap #battle .bt-cmd > * + *,
+html.supports-flex-gap #battle .bt-sub > * + *,
+html.supports-flex-gap #battle .bt-sub button.has-icon > * + *,
+html.supports-flex-gap #gain > * + *,
+html.supports-flex-gap #panel .pn-item > * + *,
+html.supports-flex-gap #panel .pn-mem > * + *,
+html.supports-flex-gap .pn-titles > * + *,
+html.supports-flex-gap #bigcard .bc-btns > * + *,
+html.supports-flex-gap #minigame .mg-head > * + *,
+html.supports-flex-gap .em-wrap > * + *,
+html.supports-flex-gap .cb-full > * + *,
+html.supports-flex-gap .wm-legend > * + *,
+html.supports-flex-gap .wm-legend span > * + *,
+html.supports-flex-gap #hud .hud-tr > * + *,
+html.supports-flex-gap #hud .hud-tl > * + *,
+html.supports-flex-gap #hud .hud-br > * + *,
+html.supports-flex-gap #hud .hud-br-row > * + *,
+html.supports-flex-gap #fs-chip > * + *,
+html.supports-flex-gap #hud-panel .hp-route > * + *,
+html.supports-flex-gap .hp-mem > * + *,
+html.supports-flex-gap .hp-nums > * + *,
+html.supports-flex-gap.m12-hud body #stage #explore #explore-list > * + *,
+html.supports-flex-gap.m12-hud body #stage #explore #routes > * + * { margin-left: 0; }
+
+html.supports-flex-gap #battle .bt-status > * + *,
+html.supports-flex-gap .st-grid .st-opt > * + *,
+html.supports-flex-gap #title-menu .tm-btns > * + *,
+html.supports-flex-gap #panel .pn-party > * + *,
+html.supports-flex-gap .du-opts > * + * { margin-top: 0; }
+
+html.supports-flex-gap #rotate-hint::before { margin-right: 0; }
